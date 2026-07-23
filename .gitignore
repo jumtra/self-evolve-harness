@@ -1,0 +1,20 @@
+# Claude Code 個人設定（チーム共有しない）
+.claude/settings.local.json
+
+# Claude Code ランタイム生成物
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+*.bak
+
+# ツール生成物
+.codegraph/
+.desloppify/
+
+# OS / エディタ
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# スクラッチ
+scratchpad/

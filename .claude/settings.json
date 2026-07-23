@@ -1,0 +1,56 @@
+{
+  "permissions": {
+    "allow": []
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v engram >/dev/null 2>&1 || exit 0; proj=$(basename \"${CLAUDE_PROJECT_DIR:-$PWD}\"); n=$(engram search \"feedback\" --project \"$proj\" 2>/dev/null | grep -c '\\[feedback\\]'); if [ \"$n\" -ge 3 ]; then echo \"AUTO-EVOLVE: 未処理フィードバックが ${n} 件蓄積されています。Agent ツールで evolver エージェントをバックグラウンド起動してから、ユーザーの依頼に着手してください（並行処理。ユーザーを待たせない）。\"; fi; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "w=\"\"; command -v engram >/dev/null 2>&1 || w=\"engram未検出 \"; f=\"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/settings.local.json\"; [ -f \"$f\" ] && ! python3 -m json.tool \"$f\" >/dev/null 2>&1 && w=\"${w}settings.local.json不正 \"; [ -n \"$w\" ] && echo \"HARNESS警告: ${w}— /doctor で確認を推奨\"; exit 0"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); p=${input#*\\\"prompt\\\":\\\"}; [ \"$p\" = \"$input\" ] && p=${input#*\\\"prompt\\\": \\\"}; [ \"$p\" = \"$input\" ] && exit 0; p=${p%%\\\"*}; case \"$p\" in *違う*|*ちがう*|*そうじゃな*|*じゃなくて*|*こうして*|*直して*|*やめて*|*戻して*|*revert*) echo \"FEEDBACK検知: memory.md に従い、この指摘を [feedback] として Engram に mem_save してから応答してください（未保存だと自己進化ループが発火しません）。\";; esac; exit 0"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); case \"$input\" in *'rm -rf /'*|*'rm -rf ~'*|*'sudo '*|*'> /dev/sda'*) echo 'BLOCKED: destructive command' >&2; exit 2;; esac; exit 0"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); f=${input#*\\\"file_path\\\":\\\"}; [ \"$f\" = \"$input\" ] && f=${input#*\\\"file_path\\\": \\\"}; [ \"$f\" = \"$input\" ] && exit 0; file=${f%%\\\"*}; base=$(basename \"$file\"); case \"$base\" in .env|.env.*) echo \"BLOCKED: 機密ファイル $base の編集は禁止されています。\" >&2; exit 2;; esac; case \"$file\" in *credential*|*secret*|*.pem|*.key) echo \"BLOCKED: 機密ファイル $base の編集は禁止されています。\" >&2; exit 2;; esac; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "input=$(cat); f=${input#*\\\"file_path\\\":\\\"}; [ \"$f\" = \"$input\" ] && f=${input#*\\\"file_path\\\": \\\"}; [ \"$f\" = \"$input\" ] && exit 0; file=${f%%\\\"*}; base=$(basename \"$file\"); case \"$base\" in ruff.toml|dprint.json|.prettierrc*|.eslintrc*|eslint.config.*|biome.json|rustfmt.toml|mypy.ini|pyrightconfig.json) echo \"BLOCKED: Linter/Formatter/型チェッカー設定 $base の変更は禁止されています。変更が必要な場合はユーザーに相談してください。\" >&2; exit 2;; esac; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}
