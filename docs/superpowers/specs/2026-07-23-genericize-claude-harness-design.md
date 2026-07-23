@@ -4,15 +4,15 @@
 
 `self-evolve-harness` リポジトリの `.claude/` は、配布用テンプレートでありながら
 中身が元プロジェクト `jum-blog`（`ng_core` クリーンアーキ / Next.js / uv）に
-instantiate された状態のまま残っている。これを **`/init` 実行前のシード状態**へ戻し、
-任意のプロジェクトに `.claude/` を投入して `/init` を回せば再インスタンス化できる
+instantiate された状態のまま残っている。これを **`/harness-init` 実行前のシード状態**へ戻し、
+任意のプロジェクトに `.claude/` を投入して `/harness-init` を回せば再インスタンス化できる
 汎用テンプレートにする。
 
 ## 方針
 
-`/init` は「スケルトンの空セクションを検出結果で埋める」差分更新設計。
+`/harness-init` は「スケルトンの空セクションを検出結果で埋める」差分更新設計。
 よって汎用化 = プロジェクト固有の記入済み内容をプレースホルダに戻し、
-`/init` が生成する成果物（言語フック等）をテンプレから除去する。
+`/harness-init` が生成する成果物（言語フック等）をテンプレから除去する。
 
 ## 変更対象
 
@@ -29,13 +29,13 @@ instantiate された状態のまま残っている。これを **`/init` 実行
 ### settings.json（言語非依存の安全フックのみ）
 
 - 残す: SessionStart(AUTO-EVOLVE) / PreToolUse Bash(破壊コマンド) / PreToolUse Write|Edit(機密 + 汎用フォーマッタ設定保護)
-- 削除: PostToolUse の `uv run ruff` フォーマッタ、`ng_core` アーキ守衛（`/init` が検出結果から生成）
+- 削除: PostToolUse の `uv run ruff` フォーマッタ、`ng_core` アーキ守衛（`/harness-init` が検出結果から生成）
 - 理由: JSON はコメント不可。未展開プレースホルダを残すとリテラル実行で壊れるため完全除去
 
 ### settings.local.json
 
 - `allow` を最小シード（`git` / `gh` / `command -v` / `engram` / `codegraph` / `claude mcp`）に。
-  `uv`/`make`/`npm`/`npx`/`node` は削除（`/init` が検出時に提案）
+  `uv`/`make`/`npm`/`npx`/`node` は削除（`/harness-init` が検出時に提案）
 
 ### _reference.md
 

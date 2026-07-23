@@ -18,7 +18,7 @@
 - settings.json に UserPromptSubmit フック追加。修正語（違う/ちがう/そうじゃな/じゃなくて/
   こうして/直して/やめて/戻して/revert）検出でリマインダを stdout 注入。ブロックしない・
   常に exit 0（fail-open）。prompt 抽出はスペース有無の両変異にフォールバック
-- hooks-boilerplate.md に記述（/init が全プロジェクトで再現）
+- hooks-boilerplate.md に記述（/harness-init が全プロジェクトで再現）
 
 ### P2: 進化の効果測定（evolve-rules）
 - 手順 2e「前回進化の効果検証」追加: changelog の前回エントリ root cause が適用日以降に
@@ -43,7 +43,7 @@
 - /doctor ライブ実行: Engram 1.19.0 稼働 / CodeGraph 1.4.1 / settings 両JSON OK /
   ダングリング参照は doctor自身の例示のみ（スラッシュ除去で解消）/ 本プロジェクトにファイルmemoryなし
 
-## 波及（/init 契約）
+## 波及（/harness-init 契約）
 - hooks-boilerplate.md と init SKILL.md 手順6 に UserPromptSubmit・SessionStart 2種を
   「常に含める言語非依存フック」として追記。新規プロジェクトでも自動再現される
 - _reference.md の自動動作表・スキル表・ファイル構成に反映
