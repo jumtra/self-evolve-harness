@@ -53,7 +53,7 @@ description: ワークフロー規約。Git・PR・タスク実行・並列デ�
 
 ## ループ協議
 
-各タスクは TDD（`coding.md` 参照）+ ループで実行する。CI コマンドは CLAUDE.md の `CI_CHECK_CMD` / `CI_FIX_CMD` を参照（`/init` が検出結果から生成）。
+各タスクは TDD（`coding.md` 参照）+ ループで実行する。CI コマンドは CLAUDE.md の `CI_CHECK_CMD` / `CI_FIX_CMD` を参照（`/harness-init` が検出結果から生成）。
 
 - Red → Green → Refactor → CI のサイクルを回す（最大5回）
 - 全チェック通過 → 完了。通過出力を証拠として添える

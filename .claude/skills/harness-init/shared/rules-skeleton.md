@@ -1,6 +1,6 @@
 # 汎用骨格（言語非依存）
 
-`/init` が rules 生成のベースとする言語非依存の原則。`languages/` モジュールの `coding-rules` / `testing-rules` セクションを「言語固有規約」セクションにマージする。
+`/harness-init` が rules 生成のベースとする言語非依存の原則。`languages/` モジュールの `coding-rules` / `testing-rules` セクションを「言語固有規約」セクションにマージする。
 
 ## coding.md 骨格
 
@@ -17,7 +17,7 @@
 - スコープ規律（NOTICED BUT NOT TOUCHING）
 - 合理化に注意
 
-> テンプレ時点の `.claude/rules/coding.md` がこの骨格の実体。`/init` は「言語固有規約」セクションのみ埋める（差分更新）。
+> テンプレ時点の `.claude/rules/coding.md` がこの骨格の実体。`/harness-init` は「言語固有規約」セクションのみ埋める（差分更新）。
 
 ## testing.md 骨格
 
@@ -31,11 +31,11 @@
 
 ## architecture.md
 
-`/init` がフェーズ1のディレクトリ構造分析から生成。クリーンアーキ/フロント/レイヤードを判定し、層構造・依存方向・配置ガイドライン・禁止パターンを記述。フラット構造はスキップ。
+`/harness-init` がフェーズ1のディレクトリ構造分析から生成。クリーンアーキ/フロント/レイヤードを判定し、層構造・依存方向・配置ガイドライン・禁止パターンを記述。フラット構造はスキップ。
 
 ## workflow.md / debugging.md / memory.md / domain.md
 
 - `workflow.md`: Git/PR規約・並列ディスパッチ・ループ協議。CIコマンドは CLAUDE.md 参照（直書きしない）
 - `debugging.md`: 差分診断デバッグ・3ストライク・コンテキスト管理。言語非依存
 - `memory.md`: Engram 運用。言語非依存
-- `domain.md`: `/init` が CodeGraph でコードベース調査し実態を埋める
+- `domain.md`: `/harness-init` が CodeGraph でコードベース調査し実態を埋める

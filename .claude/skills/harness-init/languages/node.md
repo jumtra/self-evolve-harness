@@ -41,5 +41,5 @@
 
 ```
 # 例: Next.js で pages/ から components/ への import は許可、逆は禁止等
-# /init が構造分析から個別生成
+# /harness-init が構造分析から個別生成
 ```

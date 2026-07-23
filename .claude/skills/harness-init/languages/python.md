@@ -50,4 +50,4 @@ src/*/domain/*.py) grep -n 'from src\.[a-z_]*\.infrastructure' "$file" 2>/dev/nu
 src/*/usecases/*.py) grep -n 'from src\.[a-z_]*\.infrastructure' "$file" 2>/dev/null && echo 'ARCHITECTURE VIOLATION: usecases/ から infrastructure/ をインポートしています。' || exit 0;;
 ```
 
-`src/` パスは検出したディレクトリ構造に応じて `/init` が調整する。
+`src/` パスは検出したディレクトリ構造に応じて `/harness-init` が調整する。

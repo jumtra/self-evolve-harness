@@ -1,7 +1,7 @@
 # self-evolve-harness
 
 Claude Code 用の**自己進化型ハーネス**テンプレート。任意のプロジェクトに `.claude/` を投入し、
-`/init` を実行すると、言語・ツール・構造を自動検出してルール・フック・ドメイン知識・
+`/harness-init` を実行すると、言語・ツール・構造を自動検出してルール・フック・ドメイン知識・
 CLAUDE.md/AGENTS.md を生成する。以降はユーザーのフィードバックを Engram（記憶層）に蓄積し、
 ハーネス自身（ルール/スキル/エージェント/フック）を自律的に改善していく。
 
@@ -9,9 +9,9 @@ CLAUDE.md/AGENTS.md を生成する。以降はユーザーのフィードバッ
 
 | 種別 | 内容 |
 |------|------|
-| `CLAUDE.md` / `AGENTS.md` | コア原則・ワークフロー・サブエージェント行動規範（`/init` がプレースホルダを埋める） |
+| `CLAUDE.md` / `AGENTS.md` | コア原則・ワークフロー・サブエージェント行動規範（`/harness-init` がプレースホルダを埋める） |
 | `.claude/rules/` | coding / testing / architecture / debugging / workflow / memory / domain の規約（`paths` で自動適用） |
-| `.claude/skills/` | `/brainstorm` `/init` `/evolve-rules` `/doctor` `/create-pr` `/self-review` `/create-skill` `/save-session` 等 |
+| `.claude/skills/` | `/brainstorm` `/harness-init` `/evolve-rules` `/doctor` `/create-pr` `/self-review` `/create-skill` `/save-session` 等 |
 | `.claude/agents/` | reviewer / test-writer / refactorer / design-reviewer / fixer / ci-triage / researcher / evolver |
 | `.claude/settings.json` | 言語非依存の安全フック（破壊コマンド/機密/設定保護ブロック・AUTO-EVOLVE・健全性プローブ・FB捕捉） |
 
@@ -31,13 +31,13 @@ cp -r self-evolve-harness/.claude self-evolve-harness/CLAUDE.md self-evolve-harn
   バイナリを `~/.local/bin/engram` に配置
 - **CodeGraph**（コードナレッジグラフ）: `curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh`
 
-いずれも `~/.claude.json` の `mcpServers` に stdio MCP として登録する（詳細は `/init` 手順5が自動で案内）。
+いずれも `~/.claude.json` の `mcpServers` に stdio MCP として登録する（詳細は `/harness-init` 手順5が自動で案内）。
 
 > エンタープライズで marketplace プラグインがブロックされる環境向けに、stdio MCP を直接登録する方針。
 
-### 3. `/init` を実行
+### 3. `/harness-init` を実行
 
-Claude Code で対象プロジェクトを開き、`/init` を実行する。スタック検出 → 生成内容の提示 →
+Claude Code で対象プロジェクトを開き、`/harness-init` を実行する。スタック検出 → 生成内容の提示 →
 **ユーザー承認** → 生成、の順で進む（承認前に環境やリポジトリを書き換えない）。
 
 ### 4. 使い始める
@@ -54,5 +54,5 @@ Claude Code で対象プロジェクトを開き、`/init` を実行する。ス
 
 ## 状態
 
-個人利用・検証用のハーネス。`/init` のエンドツーエンド自動テストは未整備のため、
+個人利用・検証用のハーネス。`/harness-init` のエンドツーエンド自動テストは未整備のため、
 新規プロジェクトへ適用した際は生成結果（`settings.json` / rules / CLAUDE.md）を目視確認すること。

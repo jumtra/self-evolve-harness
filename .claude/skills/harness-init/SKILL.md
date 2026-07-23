@@ -1,5 +1,5 @@
 ---
-name: init
+name: harness-init
 description: >
   リポジトリ初期化スキル。プロジェクトの言語・ツール・構造を自動検出し、
   hooks・rules・domain.md・CLAUDE.md・AGENTS.md を生成する。新規プロジェクトへのハーネス導入に使う。
@@ -276,7 +276,7 @@ tree-sitter でコード全体をナレッジグラフ化し、MCP サーバー�
 
 `domain.md` はスケルトン（プレースホルダコメント）で出力してはいけない。
 手順1–4 で検出したスタック・構造と、**コードベースを実際に読んで得た知識**を基に
-各セクションを実態通りに埋める。これが `/init` の主要成果物の一つ。
+各セクションを実態通りに埋める。これが `/harness-init` の主要成果物の一つ。
 
 #### 8a. コードベース調査（CodeGraph 必須使用）
 
@@ -396,7 +396,7 @@ Rust検出時 `Bash(cargo *)`）。
 ```bash
 grep -rnE '\b(moon|npm|cargo|make|pytest|ruff|dprint|prettier|eslint|rustfmt|biome|uv)\b' \
   .claude/skills/ .claude/agents/ .claude/rules/ --include="*.md" \
-  | grep -vE 'skills/init/|rules/domain.md'
+  | grep -vE 'skills/harness-init/|rules/domain.md'
 ```
 
 検出されたハードコードは「CLAUDE.md の CI コマンド参照」に置換するか、ユーザーに修正候補を提示する。
@@ -404,7 +404,7 @@ grep -rnE '\b(moon|npm|cargo|make|pytest|ruff|dprint|prettier|eslint|rustfmt|bio
 
 除外・良性判定（置換不要）:
 
-- `.claude/skills/init/`（`languages/` `task-runners/` `hooks-boilerplate`）はツール名を
+- `.claude/skills/harness-init/`（`languages/` `task-runners/` `hooks-boilerplate`）はツール名を
   **検出対象として列挙**する性質上ヒットするが正当。上記 grep で除外済み
 - `domain.md` はプロジェクト固有知識のファイルなので CI コマンドの実名記載を許容
 - 残ったヒットのうち、`<!-- -->` コメント内の例示・「例:」の説明文・抑制コメント名

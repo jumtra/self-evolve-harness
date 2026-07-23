@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 <!--
-  これは /init 前のシードテンプレート。`<...>` プレースホルダは /init が検出結果で埋める。
+  これは /harness-init 前のシードテンプレート。`<...>` プレースホルダは /harness-init が検出結果で埋める。
   プロジェクト概要は最小生成 + ユーザー補完。ドメイン詳細は `.claude/rules/domain.md` を参照。
 -->
 
@@ -13,13 +13,13 @@ YAGNI / KISS / DRY。コメントは WHY のみ。詳細は `.claude/rules/codin
 
 ## CI コマンド
 
-`/init` が検出したタスクランナーから生成する。monorepo の場合はアプリ単位で併記し、
+`/harness-init` が検出したタスクランナーから生成する。monorepo の場合はアプリ単位で併記し、
 編集したアプリの CI を実行する。
 
 - CI_CHECK_CMD: `<CI_CHECK_CMD>`
 - CI_FIX_CMD: `<CI_FIX_CMD>`
 
-<!-- monorepo 例（/init が実際の検出結果で置換・展開する）:
+<!-- monorepo 例（/harness-init が実際の検出結果で置換・展開する）:
 ### <アプリ名>（<パス> / <スタック>）
 - CI_CHECK_CMD: `...`
 - CI_FIX_CMD: `...`
@@ -28,7 +28,7 @@ YAGNI / KISS / DRY。コメントは WHY のみ。詳細は `.claude/rules/codin
 ## 設定ファイル（変更禁止）
 
 チーム共通の lint/format/型/ビルド設定。変更が必要ならユーザーに相談する。
-`/init` が検出結果から列挙する（`.claude/settings.json` の設定保護フックと対応させる）。
+`/harness-init` が検出結果から列挙する（`.claude/settings.json` の設定保護フックと対応させる）。
 
 <DETECTED_CONFIG_FILES>
 
@@ -80,7 +80,7 @@ YAGNI / KISS / DRY。コメントは WHY のみ。詳細は `.claude/rules/codin
   環境健全性プローブ（`/doctor`）
 - ユーザー発話の修正語を検出してフィードバック保存を促す（UserPromptSubmit）
 
-`/init` が検出結果から追加するフック（プロジェクト依存）:
+`/harness-init` が検出結果から追加するフック（プロジェクト依存）:
 
 - Write/Edit 後の自動フォーマット（検出フォーマッタ）
 - アーキテクチャ違反検知（構造検出時）

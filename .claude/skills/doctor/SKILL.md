@@ -21,7 +21,7 @@ description: >
 command -v engram >/dev/null 2>&1 && engram --version || echo "engram 未検出"
 ```
 
-- 未検出 → ❌。`/init` の必須ツール導入（Engram バイナリ配置 + `~/.claude.json` 登録）を案内
+- 未検出 → ❌。`/harness-init` の必須ツール導入（Engram バイナリ配置 + `~/.claude.json` 登録）を案内
 - MCP ツールがロード済みなら `mem_stats` / `mem_current_project` で応答と検出プロジェクトを確認
 - **このプロジェクトの観測件数を確認**する。`mem_stats` の Projects に現在の
   プロジェクト名が無い、または `engram search "" --project <repo>` が 0 件なら ⚠️
@@ -35,7 +35,7 @@ command -v codegraph >/dev/null 2>&1 && codegraph --version || echo "codegraph �
 test -d .codegraph && echo ".codegraph あり" || echo ".codegraph なし（codegraph init 未実行）"
 ```
 
-- 未検出 → ⚠️（domain.md 生成・調査に影響。`/init` の導入手順を案内）
+- 未検出 → ⚠️（domain.md 生成・調査に影響。`/harness-init` の導入手順を案内）
 
 ### 3. settings の JSON 妥当性
 

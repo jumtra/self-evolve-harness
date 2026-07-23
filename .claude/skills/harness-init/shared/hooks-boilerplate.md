@@ -1,6 +1,6 @@
 # 言語非依存フック雛形
 
-`/init` が常に含める言語非依存の安全装置フック。検出した言語・タスクランナーのフックは `languages/` `task-runners/` から合成して追加する。
+`/harness-init` が常に含める言語非依存の安全装置フック。検出した言語・タスクランナーのフックは `languages/` `task-runners/` から合成して追加する。
 
 ## フック入力の受け取り方（共通規約）
 
@@ -37,7 +37,7 @@ input=$(cat); f=${input#*\"file_path\":\"}; [ "$f" = "$input" ] && f=${input#*\"
 
 matcher: `Write|Edit`
 
-保護対象ファイルリストは `/init` が手順3の検出結果から動的生成する。テンプレ:
+保護対象ファイルリストは `/harness-init` が手順3の検出結果から動的生成する。テンプレ:
 
 ```sh
 input=$(cat); f=${input#*\"file_path\":\"}; [ "$f" = "$input" ] && f=${input#*\"file_path\": \"}; [ "$f" = "$input" ] && exit 0; file=${f%%\"*}; base=$(basename "$file"); case "$base" in <DETECTED_CONFIG_FILES>) echo "BLOCKED: Linter/Formatter/型チェッカー設定 $base の変更は禁止されています。変更が必要な場合はユーザーに相談してください。" >&2; exit 2;; esac; exit 0
@@ -81,5 +81,5 @@ matcher: なし（Stop イベント）
 changed=$(git diff --name-only HEAD 2>/dev/null | grep -E '\.(py|ts|js|rs|go)$' | head -1); if [ -n "$changed" ]; then result=$(<CI_CHECK_CMD> 2>&1 | tail -20); echo "$result"; fi; exit 0
 ```
 
-- 拡張子は検出した言語に応じて `/init` が生成
+- 拡張子は検出した言語に応じて `/harness-init` が生成
 - `<CI_CHECK_CMD>` は `task-runners/` モジュールから導出した代表CIコマンド

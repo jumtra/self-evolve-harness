@@ -43,7 +43,7 @@ Engram からフィードバックとレッスンログを取得する:
 - `[feedback:done]`: 処理済み（対象外）
 
 Engram が未導入（MCP なしかつ `command -v engram` 失敗）の場合は中止し、
-`/init` の必須ツール導入をユーザーに案内する。
+`/harness-init` の必須ツール導入をユーザーに案内する。
 
 ### 2. 分析
 
@@ -120,7 +120,7 @@ blast radius も大きい（作業ツリーに入った時点でセッション�
 
 #### hook を作成・改修する場合
 
-hook の記述規約は `.claude/skills/init/shared/hooks-boilerplate.md` を単一ソースとして
+hook の記述規約は `.claude/skills/harness-init/shared/hooks-boilerplate.md` を単一ソースとして
 参照する（stdin JSON パースのイディオム、`exit 2` は PreToolUse のみ、パース曖昧時は
 fail-open 等）。ここには複製しない。
 
@@ -128,7 +128,7 @@ fail-open 等）。ここには複製しない。
 
 - 新規 hook の追加、および evolve が過去に追加した hook（`docs/harness-changelog.md`
   で追跡）の改修のみ行う
-- `/init` 生成の安全フック（破壊的コマンドブロック / 機密ファイルブロック / 設定保護 /
+- `/harness-init` 生成の安全フック（破壊的コマンドブロック / 機密ファイルブロック / 設定保護 /
   フォーマッタ / アーキテクチャ守衛 / CI ゲート）と、evolve 由来でない既存 hook の
   **削除・改変はしない**。必要と判断しても適用せず報告に留める
 

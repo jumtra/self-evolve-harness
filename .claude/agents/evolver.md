@@ -33,7 +33,7 @@ tools:
   を選ぶか、見送って報告に残す
 - **hook（`.claude/settings.json`）の変更は SKILL の必須検証ゲート
   （JSON妥当性・プレースホルダ検査・dry-run・fail-open）を全通過したものだけ適用する。
-  新規追加と自作 hook の改修のみ可。`/init` 生成の安全フックと evolve 由来でない既存
+  新規追加と自作 hook の改修のみ可。`/harness-init` 生成の安全フックと evolve 由来でない既存
   hook の削除・改変はしない**（詳細は SKILL の「hook を作成・改修する場合」）
 
 ## 完了報告の形式

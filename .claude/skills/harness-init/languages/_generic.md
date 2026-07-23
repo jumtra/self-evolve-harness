@@ -3,7 +3,7 @@
 検出条件: 検出された言語に対応する `languages/*.md` 専用モジュールが存在しない場合
 (例: Ruby, PHP, C#, Java, Kotlin, Elixir 等)。
 
-このモジュールは固定内容ではなく**検出手順のプロトコル**。各セクションは `/init` 実行時に
+このモジュールは固定内容ではなく**検出手順のプロトコル**。各セクションは `/harness-init` 実行時に
 このプロトコルに従って実プロジェクトから導出する。
 
 ## 言語特定(前段)
@@ -34,7 +34,7 @@ formatter と同じプロトコル(候補列挙 → `command -v` + 設定ファ�
 ## typechecker
 
 formatter と同じプロトコル。検出できた場合は保護対象設定ファイルリストにも追加する
-(`/init` 手順3と同じ扱い)。
+(`/harness-init` 手順3と同じ扱い)。
 
 ## coding-rules
 
@@ -50,7 +50,7 @@ formatter と同じプロトコル。検出できた場合は保護対象設定�
 
 ## architecture-guard
 
-`/init` 手順4のディレクトリ構造分析結果からパスパターンを導出する(言語非依存ロジック):
+`/harness-init` 手順4のディレクトリ構造分析結果からパスパターンを導出する(言語非依存ロジック):
 
 ```sh
 <domain-path-pattern>) grep -n '<infrastructure-import-pattern>' "$file" 2>/dev/null && echo 'ARCHITECTURE VIOLATION: domain 層から infrastructure 層を参照しています。' || exit 0;;

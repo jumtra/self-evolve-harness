@@ -10,9 +10,9 @@
 
 | 機能                   | 仕組み                                                                      |
 | ---------------------- | --------------------------------------------------------------------------- |
-| ルール適用             | ソース編集時に該当 rules が自動ロード（`/init` が `paths` を生成）          |
-| 自動フォーマット       | Write/Edit 後に `/init` が検出したフォーマッタ（PostToolUse フック）       |
-| アーキテクチャ違反検知 | `/init` が構造分析から生成した依存方向守衛（PostToolUse フック）            |
+| ルール適用             | ソース編集時に該当 rules が自動ロード（`/harness-init` が `paths` を生成）          |
+| 自動フォーマット       | Write/Edit 後に `/harness-init` が検出したフォーマッタ（PostToolUse フック）       |
+| アーキテクチャ違反検知 | `/harness-init` が構造分析から生成した依存方向守衛（PostToolUse フック）            |
 | CI ゲート              | git commit 前に `CI_CHECK_CMD` 自動実行（PreToolUse フック）                |
 | 破壊的コマンドブロック | rm -rf / 等を自動ブロック（PreToolUse フック）                              |
 | 完了前テスト           | タスク完了宣言前に CI を再実行（Stop フック）                               |
@@ -35,7 +35,7 @@
 | `/save-session`  | 作業コンテキストをメモリに保存                  |
 | `/create-skill`  | 新しいスキルを作成・テスト・配置                |
 | `/doctor`        | ハーネス自己診断。Engram/CodeGraph到達性・JSON妥当性・ダングリング参照を検査 |
-| `/init`          | リポジトリ初期化。スタック検出→hooks/rules生成  |
+| `/harness-init`          | リポジトリ初期化。スタック検出→hooks/rules生成  |
 
 ### エージェント（`Agent(subagent_type: "name")` で呼び出し）
 
@@ -172,8 +172,8 @@ Maker-Checker分離、STATE.md による外部状態管理、トークンコス�
 
 | パターン                              | 出典                  | 適用先                          |
 | ------------------------------------- | --------------------- | ------------------------------- |
-| PostToolUse（自動フォーマット）       | learn-claude-code     | `/init` が検出したフォーマッタ    |
-| PostToolUse（アーキテクチャ違反検知） | awesome-agent-harness | `/init` が生成した依存方向守衛    |
+| PostToolUse（自動フォーマット）       | learn-claude-code     | `/harness-init` が検出したフォーマッタ    |
+| PostToolUse（アーキテクチャ違反検知） | awesome-agent-harness | `/harness-init` が生成した依存方向守衛    |
 | PreToolUse（破壊的コマンドブロック）  | learn-claude-code     | rm -rf 等                       |
 | PreToolUse（CI 品質ゲート）           | awesome-agent-harness | git commit 前の `CI_CHECK_CMD`  |
 | Stop フック（完了前テスト）           | Qiita (Syoitu)        | タスク完了前の CI 再実行        |
@@ -202,16 +202,16 @@ Maker-Checker分離、STATE.md による外部状態管理、トークンコス�
 ## ファイル構成
 
 ```
-CLAUDE.md                                    # コア原則 + 自動動作（≤200行）。/init がプレースホルダを埋める
+CLAUDE.md                                    # コア原則 + 自動動作（≤200行）。/harness-init がプレースホルダを埋める
 AGENTS.md                                    # サブエージェント共通の行動規範（言語非依存の完成形）
 .claude/
 ├── rules/
-│   ├── architecture.md                      # `/init` が構造分析から生成（paths: src/**)
-│   ├── coding.md                            # 汎用骨格 + `/init` が言語固有を埋める（paths: src/**, scripts/**)
-│   ├── testing.md                           # 汎用骨格 + `/init` が言語固有を埋める（paths: tests/**)
+│   ├── architecture.md                      # `/harness-init` が構造分析から生成（paths: src/**)
+│   ├── coding.md                            # 汎用骨格 + `/harness-init` が言語固有を埋める（paths: src/**, scripts/**)
+│   ├── testing.md                           # 汎用骨格 + `/harness-init` が言語固有を埋める（paths: tests/**)
 │   ├── debugging.md                         # デバッグ規約（paths: src/**, scripts/**, tests/**)
 │   ├── workflow.md                          # Git・PR規約
-│   └── domain.md                            # `/init` が CodeGraph で生成 + Gotchas
+│   └── domain.md                            # `/harness-init` が CodeGraph で生成 + Gotchas
 ├── agents/
 │   ├── reviewer.md                          # コードレビュー → refactorer に委譲可
 │   ├── test-writer.md                       # DAMP テスト生成
@@ -231,7 +231,7 @@ AGENTS.md                                    # サブエージェント共通の
 │   ├── save-session/SKILL.md                # セッション保存
 │   ├── create-skill/SKILL.md                # メタスキル
 │   ├── doctor/SKILL.md                      # ハーネス自己診断
-│   └── init/SKILL.md                        # リポジトリ初期化
+│   └── harness-init/SKILL.md                        # リポジトリ初期化
 ├── settings.json                            # チーム共通設定 + hooks
 ├── settings.local.json                      # 個人設定（.gitignore）
 └── _reference.md                            # このファイル
