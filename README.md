@@ -12,7 +12,7 @@ CLAUDE.md/AGENTS.md を生成する。以降はユーザーのフィードバッ
 | `CLAUDE.md` / `AGENTS.md` | コア原則・ワークフロー・サブエージェント行動規範（`/harness-init` がプレースホルダを埋める） |
 | `.claude/rules/` | coding / testing / architecture / debugging / workflow / memory / domain の規約（`paths` で自動適用） |
 | `.claude/skills/` | `/brainstorm` `/harness-init` `/evolve-rules` `/doctor` `/create-pr` `/self-review` `/create-skill` `/save-session` 等 |
-| `.claude/agents/` | reviewer / test-writer / refactorer / design-reviewer / fixer / ci-triage / researcher / evolver |
+| `.claude/agents/` | implementer / reviewer / test-writer / refactorer / design-reviewer / fixer / ci-triage / researcher / evolver |
 | `.claude/settings.json` | 言語非依存の安全フック（破壊コマンド/機密/設定保護ブロック・AUTO-EVOLVE・健全性プローブ・FB捕捉） |
 
 設計思想と各パターンの出典は [`.claude/_reference.md`](.claude/_reference.md) を参照。
@@ -42,7 +42,8 @@ Claude Code で対象プロジェクトを開き、`/harness-init` を実行す�
 
 ### 4. 使い始める
 
-- コード変更依頼 → `/brainstorm` が要件定義→計画→自律実行を仕切る
+- コード変更依頼 → `/brainstorm` が要件定義→計画→自律実行を仕切る。計画時に wave（並列グループ）が
+  割られ、承認後は wave 単位で `implementer` を並列ディスパッチして無質問で完遂する
 - 環境が怪しいとき → `/doctor` で自己診断
 - フィードバックが溜まると（3件以上）セッション開始時に自動で evolver が起動しハーネスを改善
 

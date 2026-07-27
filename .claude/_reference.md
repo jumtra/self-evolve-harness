@@ -18,6 +18,7 @@
 | 完了前テスト           | タスク完了宣言前に CI を再実行（Stop フック）                               |
 | 健全性プローブ         | セッション開始時に engram 不在・settings.local.json 破損を検出し1行警告（SessionStart フック）。詳細は `/doctor` |
 | 要件定義ファースト     | コード変更依頼時に `/brainstorm` を自動実行                    |
+| タスク自動並列実行     | 実装計画の wave（並列グループ）単位で `implementer` を一括ディスパッチ。barrier で境界検証→CI→wave コミット（`workflow.md` + `brainstorm/references/parallel-dispatch.md`） |
 | feedback 捕捉          | ユーザー発話の修正語を UserPromptSubmit フックが検出し、`[feedback]` の Engram 保存を促す（保存自体はエージェントが実行） |
 | feedback メモリ        | ユーザーの修正・指摘直後に即時保存                             |
 | project メモリ         | 設計判断で選択肢から1つを選んだとき保存                       |
@@ -41,6 +42,7 @@
 
 | エージェント      | 用途                                                               |
 | ----------------- | ------------------------------------------------------------------ |
+| `implementer`     | 実装ワーカー。計画タスク1件を所有ファイルの範囲で TDD 完結。wave 単位で並列起動 |
 | `reviewer`        | コードレビュー。YAGNI/KISS/DRY、アーキテクチャ準拠、型安全性を検証 |
 | `test-writer`     | DAMP 原則に従ったテスト生成                                        |
 | `refactorer`      | コードの構造改善。reviewer から委譲される                          |
@@ -115,7 +117,7 @@ Maker-Checker分離、STATE.md による外部状態管理、トークンコス�
 | SKILL.md ディレクトリ形式                 | anthropics/skills | `.claude/skills/*/SKILL.md`               |
 | YAML frontmatter + Markdown 本体          | Claude Code 公式  | `.claude/agents/*.md`                     |
 | settings.json / settings.local.json 分離  | Claude Code 公式  | `.claude/settings.json`                   |
-| references/ による Progressive Disclosure | anthropics/skills | `.claude/skills/evolve-rules/references/` |
+| references/ による Progressive Disclosure | anthropics/skills | `.claude/skills/evolve-rules/references/`, `.claude/skills/brainstorm/references/` |
 | 階層的ルールによる責務分離                | oracle/agent-spec | `.claude/rules/` の領域別分割             |
 
 ### 自己進化メカニズム
@@ -164,7 +166,9 @@ Maker-Checker分離、STATE.md による外部状態管理、トークンコス�
 | パターン                             | 出典                          | 適用先                       |
 | ------------------------------------ | ----------------------------- | ---------------------------- |
 | Swarm パターン（エージェント間委譲） | oracle/agent-spec             | reviewer → refactorer        |
-| ManagerWorkers パターン              | oracle/agent-spec             | brainstorm → design-reviewer |
+| ManagerWorkers パターン              | oracle/agent-spec             | brainstorm → design-reviewer, wave 並列ディスパッチ |
+| ParallelFlowNode（wave 並列 + barrier） | oracle/agent-spec          | `references/parallel-dispatch.md` |
+| ファイル所有権による衝突回避         | プロジェクト方針              | `implementer` の所有ファイル境界 |
 | 偵察→行動パターン                    | anthropics/skills             | refactorer, test-writer      |
 | Maker-Checker 分離                   | Qiita (Syoitu), Zenn (suwash) | 作業エージェント + fixer     |
 
@@ -213,6 +217,7 @@ AGENTS.md                                    # サブエージェント共通の
 │   ├── workflow.md                          # Git・PR規約
 │   └── domain.md                            # `/harness-init` が CodeGraph で生成 + Gotchas
 ├── agents/
+│   ├── implementer.md                       # 実装ワーカー（TDD完結・所有ファイル境界・wave 並列）
 │   ├── reviewer.md                          # コードレビュー → refactorer に委譲可
 │   ├── test-writer.md                       # DAMP テスト生成
 │   ├── refactorer.md                        # 構造改善
@@ -222,7 +227,9 @@ AGENTS.md                                    # サブエージェント共通の
 │   ├── researcher.md                        # 外部情報調査（WebSearch/WebFetch）
 │   └── evolver.md                           # ハーネス進化（バックグラウンド）
 ├── skills/
-│   ├── brainstorm/SKILL.md                  # 要件定義（HARD-GATE 付き）
+│   ├── brainstorm/                          # 要件定義（HARD-GATE 付き）
+│   │   ├── SKILL.md
+│   │   └── references/parallel-dispatch.md   # wave 並列ディスパッチの詳細プロトコル
 │   ├── create-pr/SKILL.md                   # PR作成
 │   ├── self-review/SKILL.md                 # セルフレビュー（自己完結型）
 │   ├── evolve-rules/                        # ルール進化
