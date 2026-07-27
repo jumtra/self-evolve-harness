@@ -2,6 +2,16 @@
 description: アーキテクチャ規約。ソースコード変更時に適用。/harness-init がディレクトリ構造分析から生成する。
 paths:
   - "src/**"
+  - "app/**"
+  - "lib/**"
+  - "pkg/**"
+  - "cmd/**"
+  - "internal/**"
+  - "packages/**"
+  - "crates/**"
+  - "libs/**"
+  - "apps/**"
+  - "services/**"
 ---
 
 # アーキテクチャ規約

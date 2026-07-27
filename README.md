@@ -20,11 +20,17 @@ CLAUDE.md/AGENTS.md を生成する。以降はユーザーのフィードバッ
 
 ## 導入手順
 
-### 1. `.claude/` と CLAUDE.md/AGENTS.md を対象プロジェクトにコピー
+### 1. `.claude/` と CLAUDE.md/AGENTS.md/PRテンプレートを対象プロジェクトにコピー
 
 ```sh
 cp -r self-evolve-harness/.claude self-evolve-harness/CLAUDE.md self-evolve-harness/AGENTS.md <your-project>/
+mkdir -p <your-project>/.github
+cp self-evolve-harness/.github/pull_request_template.md <your-project>/.github/
 ```
+
+`.claude/.gitignore` が同梱されているので、実行ログ（`harness-log.jsonl`）・個人設定
+（`settings.local.json`）・worktree は導入先でも自動的に除外される（ルートの `.gitignore` への
+追記は不要）。
 
 ### 2. 必須ツールを導入（記憶層・コードグラフ）
 

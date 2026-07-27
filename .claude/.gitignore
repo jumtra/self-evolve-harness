@@ -1,0 +1,8 @@
+# ハーネスのランタイム生成物・個人設定。
+# .claude/ をコピーして導入したプロジェクトでも除外が効くよう、この階層に置く
+# （導入先のルート .gitignore に追記し忘れても実行ログや個人設定がコミットされない）。
+
+harness-log.jsonl
+settings.local.json
+worktrees/
+scheduled_tasks.lock

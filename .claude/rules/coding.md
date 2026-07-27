@@ -2,6 +2,16 @@
 description: コーディング規約。ソースコード変更時に適用。
 paths:
   - "src/**"
+  - "app/**"
+  - "lib/**"
+  - "pkg/**"
+  - "cmd/**"
+  - "internal/**"
+  - "packages/**"
+  - "crates/**"
+  - "libs/**"
+  - "apps/**"
+  - "services/**"
   - "scripts/**"
 ---
 

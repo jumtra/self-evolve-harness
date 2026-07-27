@@ -2,8 +2,23 @@
 description: デバッグ・トラブルシューティングの規約。バグ修正やエラー対応時に適用。
 paths:
   - "src/**"
+  - "app/**"
+  - "lib/**"
+  - "pkg/**"
+  - "cmd/**"
+  - "internal/**"
+  - "packages/**"
+  - "crates/**"
+  - "libs/**"
+  - "apps/**"
+  - "services/**"
   - "scripts/**"
-  - "tests/**"
+  - "**/tests/**"
+  - "**/test/**"
+  - "**/spec/**"
+  - "**/*_test.*"
+  - "**/*.test.*"
+  - "**/*Test.*"
 ---
 
 # デバッグ規約
