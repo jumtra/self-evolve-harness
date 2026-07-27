@@ -79,6 +79,27 @@ find . -name "MEMORY.md" 2>/dev/null
 - ファイルベース memory にファイルがある → ⚠️。`memory.md` は Engram を正とするため、
   旧ファイルの `memory.bak/` 退避を案内（`memory.md` の「既存 auto-memory の扱い」）
 
+### 7. 実行ログ（harness-log.jsonl）
+
+hook が dispatch / commit / session_start を自動記録する実行ログの存在と内訳を確認する
+（`evolve-rules` の証拠源として使われる。仕様は `evolve-rules/SKILL.md` 手順1参照）:
+
+```bash
+f=.claude/harness-log.jsonl
+if [ -s "$f" ]; then
+  wc -l < "$f"
+  grep -o '"event":"[^"]*"' "$f" | sort | uniq -c
+  grep -o '"agent":"[^"]*"' "$f" | sort | uniq -c
+else
+  echo "harness-log.jsonl が無い、または空です"
+fi
+```
+
+- ファイルが無い/空 → ⚠️（`.gitignore` 済みで git 管理外のため無くても異常とは限らない。
+  hook が動いていない可能性と、新規プロジェクトでまだ記録が無い可能性の両方を示す。
+  削除や再生成は行わず、確認を促すに留める）
+- 存在する → ✅。総行数とイベント別・エージェント別の内訳を所見に添える
+
 ## 出力形式
 
 ```
@@ -92,6 +113,7 @@ find . -name "MEMORY.md" 2>/dev/null
 | ダングリング参照 | ... | ... |
 | デッドルール | ... | ... |
 | メモリ二重系統 | ... | ... |
+| 実行ログ | ... | ... |
 
 ### 推奨アクション（優先度順）
 1. <修正案>

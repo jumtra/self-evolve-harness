@@ -3,7 +3,7 @@ name: ci-triage
 description: >
   CI失敗トリアージエージェント。CI を実行してログを読み、失敗を種別
   （テスト/lint/型/ビルド/flaky/環境）に分類し、適切な委譲先（fixer / refactorer /
-  呼び出し元）を提案する。/goal や loop で CI が赤いときに使う。修正自体はしない。
+  呼び出し元）を提案する。/loop 実行中や CI が赤いときに使う。修正自体はしない。
 model: sonnet
 tools:
   - Read

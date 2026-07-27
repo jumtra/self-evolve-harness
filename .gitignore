@@ -4,6 +4,7 @@
 # Claude Code ランタイム生成物
 .claude/scheduled_tasks.lock
 .claude/worktrees/
+.claude/harness-log.jsonl
 *.bak
 
 # ツール生成物

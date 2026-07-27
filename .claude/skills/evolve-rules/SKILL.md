@@ -27,7 +27,7 @@ Engram に蓄積されたフィードバックを分析し、ハーネスを進�
 
 ## 手順
 
-### 1. 収集（Engram）
+### 1. 収集（Engram + 実行ログ）
 
 Engram からフィードバックとレッスンログを取得する:
 
@@ -44,6 +44,60 @@ Engram からフィードバックとレッスンログを取得する:
 
 Engram が未導入（MCP なしかつ `command -v engram` 失敗）の場合は中止し、
 `/harness-init` の必須ツール導入をユーザーに案内する。
+
+#### 実行ログの集計（証拠源その2）
+
+Engram のフィードバックは「気づき」ベースの証拠。`.claude/harness-log.jsonl`
+（hook が dispatch / commit / session_start を自動記録する実行ログ。git 管理外）は
+「実測」ベースの証拠として並列に使う。集計例（`python3` 標準ライブラリのみで完結）:
+
+```bash
+python3 -c "
+import json, collections, os
+path = '.claude/harness-log.jsonl'
+if not os.path.exists(path) or os.path.getsize(path) == 0:
+    print('未計測: .claude/harness-log.jsonl が無いか空です')
+else:
+    events, agents = collections.Counter(), collections.Counter()
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                d = json.loads(line)
+            except Exception:
+                continue
+            events[d.get('event')] += 1
+            if d.get('event') == 'dispatch':
+                agents[d.get('agent', 'unknown')] += 1
+    print('events:', dict(events))
+    print('dispatch by agent:', dict(agents))
+"
+```
+
+`grep`/`sort`/`uniq` でも代替できる:
+
+```bash
+f=.claude/harness-log.jsonl
+[ -s "$f" ] && grep -o '\"event\":\"[^\"]*\"' "$f" | sort | uniq -c
+[ -s "$f" ] && grep -o '\"agent\":\"[^\"]*\"' "$f" | sort | uniq -c
+```
+
+注意: `commit` イベントは「Bash 実行コマンド文字列に `git commit` を含む」だけで
+発火するため、実行しただけでコミットに至らなかった呼び出しも混ざる。
+**件数は目安であり厳密なコミット数ではない**。
+
+解釈例（分析の手がかりであり断定ではない。他の証拠と突き合わせて判断する）:
+
+- `fixer` の dispatch 比率が高い → 3ストライクが頻発している＝`debugging.md` か
+  該当ルールが機能していない証拠
+- `implementer` の dispatch 件数に対し `reviewer` の dispatch がほとんど無い →
+  レビュー工程が飛ばされている証拠
+
+ログファイルが無い、または0行の場合は**「未計測」として扱い、分析を中止しない**
+（Engram 未導入時の中止とは異なる扱い。ログはあくまで補助証拠であり、無くても
+Engram 側の証拠だけで手順2以降を継続できる）。
 
 ### 2. 分析
 

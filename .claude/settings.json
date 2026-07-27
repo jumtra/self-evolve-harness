@@ -14,6 +14,10 @@
           {
             "type": "command",
             "command": "w=\"\"; command -v engram >/dev/null 2>&1 || w=\"engram未検出 \"; f=\"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/settings.local.json\"; [ -f \"$f\" ] && ! python3 -m json.tool \"$f\" >/dev/null 2>&1 && w=\"${w}settings.local.json不正 \"; [ -n \"$w\" ] && echo \"HARNESS警告: ${w}— /doctor で確認を推奨\"; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "n=0; command -v engram >/dev/null 2>&1 && { proj=$(basename \"${CLAUDE_PROJECT_DIR:-$PWD}\"); n=$(engram search \"feedback\" --project \"$proj\" 2>/dev/null | grep -c '\\[feedback\\]'); }; log=\"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/harness-log.jsonl\"; ts=$(date -u +%FT%TZ); printf '{\"ts\":\"%s\",\"event\":\"session_start\",\"pending_feedback\":%s}\\n' \"$ts\" \"$n\" >> \"$log\" 2>/dev/null; exit 0"
           }
         ]
       }
@@ -35,6 +39,23 @@
           {
             "type": "command",
             "command": "input=$(cat); case \"$input\" in *'rm -rf /'*|*'rm -rf ~'*|*'sudo '*|*'> /dev/sda'*) echo 'BLOCKED: destructive command' >&2; exit 2;; esac; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "input=$(cat); case \"$input\" in *'git commit'*) ;; *) exit 0;; esac; cd \"${CLAUDE_PROJECT_DIR:-$PWD}\" 2>/dev/null || exit 0; hits=$(git diff --cached 2>/dev/null | grep -E '^\\+' | grep -nE 'AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36}|sk-(ant-)?[A-Za-z0-9_-]{32,}|xox[baprs]-[A-Za-z0-9-]{10,}' | head -5); [ -n \"$hits\" ] && { printf 'BLOCKED: ステージ済み差分に秘密情報らしき文字列があります。除去してからコミットしてください:\\n%s\\n' \"$hits\" >&2; exit 2; }; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "input=$(cat); case \"$input\" in *'git commit'*) ;; *) exit 0;; esac; log=\"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/harness-log.jsonl\"; ts=$(date -u +%FT%TZ); printf '{\"ts\":\"%s\",\"event\":\"commit\"}\\n' \"$ts\" >> \"$log\" 2>/dev/null; exit 0"
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); a=${input#*\\\"subagent_type\\\":\\\"}; [ \"$a\" = \"$input\" ] && a=${input#*\\\"subagent_type\\\": \\\"}; if [ \"$a\" = \"$input\" ]; then agent=\"unknown\"; else agent=${a%%\\\"*}; fi; log=\"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/harness-log.jsonl\"; ts=$(date -u +%FT%TZ); printf '{\"ts\":\"%s\",\"event\":\"dispatch\",\"agent\":\"%s\"}\\n' \"$ts\" \"$agent\" >> \"$log\" 2>/dev/null; exit 0"
           }
         ]
       },

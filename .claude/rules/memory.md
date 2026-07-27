@@ -75,7 +75,7 @@ Claude Code 組み込みのファイルベース memory（`~/.claude/projects/..
 以下のタイミングで `/save-session` を実行する:
 
 - `/create-pr` 実行後
-- `/loop` `/goal` のループ完了後
+- `/loop` のループ完了後
 - ユーザーが「終わり」「また明日」「ありがとう」等と言ったとき
 
 `/save-session` 実行時にセッションサマリを `mem_save` で Engram に記録する。
