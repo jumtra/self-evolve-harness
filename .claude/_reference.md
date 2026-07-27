@@ -15,6 +15,8 @@
 | アーキテクチャ違反検知 | `/harness-init` が構造分析から生成した依存方向守衛（PostToolUse フック）            |
 | CI ゲート              | git commit 前に `CI_CHECK_CMD` 自動実行（PreToolUse フック）                |
 | 破壊的コマンドブロック | rm -rf / 等を自動ブロック（PreToolUse フック）                              |
+| 秘密情報スキャン       | `git commit` 前に staged 差分を走査し、資格情報（AWS キー・秘密鍵・各種トークン）の混入をブロック（PreToolUse フック。誤検知を避けるため高精度パターンのみ） |
+| ハーネス実行ログ       | エージェント起動・commit・セッション開始を `.claude/harness-log.jsonl` に追記（PreToolUse / SessionStart フック）。`/evolve-rules` の実測証拠、`/doctor` の検査対象 |
 | 完了前テスト           | タスク完了宣言前に CI を再実行（Stop フック）                               |
 | 健全性プローブ         | セッション開始時に engram 不在・settings.local.json 破損を検出し1行警告（SessionStart フック）。詳細は `/doctor` |
 | 要件定義ファースト     | コード変更依頼時に `/brainstorm` を自動実行                    |
@@ -31,8 +33,9 @@
 | ---------------- | ----------------------------------------------- |
 | `/brainstorm`    | 要件定義。目的→制約→成功基準→設計→承認→実装計画 |
 | `/create-pr`     | PRテンプレートに従ってPR作成                    |
-| `/self-review`   | YAGNI/KISS/DRY/Fail Fast/可読性の観点でレビュー |
-| `/evolve-rules`  | フィードバックからルール/スキル/エージェントを進化 |
+| `/self-review`   | 並列多観点レビュー。reviewer 4レーン同時 → 重複排除 → Critical の敵対的検証 |
+| `/address-review` | PR レビュー指摘の取り込み→分類→承認→修正→再push→解決報告 |
+| `/evolve-rules`  | フィードバックと実行ログからルール/スキル/エージェントを進化 |
 | `/save-session`  | 作業コンテキストをメモリに保存                  |
 | `/create-skill`  | 新しいスキルを作成・テスト・配置                |
 | `/doctor`        | ハーネス自己診断。Engram/CodeGraph到達性・JSON妥当性・ダングリング参照を検査 |
@@ -52,15 +55,16 @@
 | `researcher`      | 外部情報調査。WebSearch/WebFetch で出典付き要約を分離コンテキストで返す |
 | `evolver`         | ハーネス進化。AUTO-EVOLVE 通知でバックグラウンド起動され、feedback を rules/skills/agents/hook に反映 |
 
-### ループ実行（`/loop` `/goal` で自律実行）
+### ループ実行（`/loop` で自律実行）
 
 ```bash
 # 30分ごとにissueをチェックして自動実装
 /loop 30m
 未処理issueを確認し、あれば workflow.md のループ協議に従い実装する。
 
-# 特定のゴールを達成するまで自律実行
-/goal PR #123 が green CI、blocking comment なし、main にリベース済み
+# 間隔を省略するとモデルが自己ペースで回す（達成条件を明示する）
+/loop
+PR #123 が green CI、blocking comment なし、main にリベース済みになるまで進める。
 ```
 
 ---
@@ -102,7 +106,7 @@ Maker-Checker分離、STATE.md による外部状態管理、トークンコス�
 #### [やさしいループエンジニアリング入門（docswell: harinezumi）](https://www.docswell.com/s/harinezumi/K3J9JJ-2026-07-10-202543)
 
 ループが有効な4条件（反復性、機械的失敗検出、自律完結、客観的完成定義）を明確化。
-ループプロトコルを workflow.md のループ協議として体系化し、/loop + /goal で自律実行する実践パターンを提示。
+ループプロトコルを workflow.md のループ協議として体系化し、`/loop` で自律実行する実践パターンを提示。
 
 ---
 
@@ -171,6 +175,7 @@ Maker-Checker分離、STATE.md による外部状態管理、トークンコス�
 | ファイル所有権による衝突回避         | プロジェクト方針              | `implementer` の所有ファイル境界 |
 | 偵察→行動パターン                    | anthropics/skills             | refactorer, test-writer      |
 | Maker-Checker 分離                   | Qiita (Syoitu), Zenn (suwash) | 作業エージェント + fixer     |
+| 多観点並列レビュー + 敵対的検証      | プロジェクト方針              | `/self-review`（4レーン → 反証で偽陽性除去） |
 
 ### Hooks & Automation
 
@@ -180,6 +185,8 @@ Maker-Checker分離、STATE.md による外部状態管理、トークンコス�
 | PostToolUse（アーキテクチャ違反検知） | awesome-agent-harness | `/harness-init` が生成した依存方向守衛    |
 | PreToolUse（破壊的コマンドブロック）  | learn-claude-code     | rm -rf 等                       |
 | PreToolUse（CI 品質ゲート）           | awesome-agent-harness | git commit 前の `CI_CHECK_CMD`  |
+| PreToolUse（秘密情報スキャン）        | プロジェクト方針      | git commit 前の staged 差分走査 |
+| 実行ログによる観測性                  | awesome-agent-harness (Observability) | `.claude/harness-log.jsonl` → `/evolve-rules`, `/doctor` |
 | Stop フック（完了前テスト）           | Qiita (Syoitu)        | タスク完了前の CI 再実行        |
 
 ### ループエンジニアリング
@@ -231,7 +238,8 @@ AGENTS.md                                    # サブエージェント共通の
 │   │   ├── SKILL.md
 │   │   └── references/parallel-dispatch.md   # wave 並列ディスパッチの詳細プロトコル
 │   ├── create-pr/SKILL.md                   # PR作成
-│   ├── self-review/SKILL.md                 # セルフレビュー（自己完結型）
+│   ├── address-review/SKILL.md              # PRレビュー指摘の取り込み→対応→解決報告
+│   ├── self-review/SKILL.md                 # 並列多観点レビュー + 敵対的検証
 │   ├── evolve-rules/                        # ルール進化
 │   │   ├── SKILL.md
 │   │   └── references/ahe-principles.md     # AHE 原則
@@ -241,7 +249,11 @@ AGENTS.md                                    # サブエージェント共通の
 │   └── harness-init/SKILL.md                        # リポジトリ初期化
 ├── settings.json                            # チーム共通設定 + hooks
 ├── settings.local.json                      # 個人設定（.gitignore）
+├── harness-log.jsonl                        # 実行ログ（hook が追記・.gitignore）
 └── _reference.md                            # このファイル
+
+.github/
+└── pull_request_template.md                 # PRテンプレート（workflow.md の4セクション規定の実体）
 ```
 
 ---

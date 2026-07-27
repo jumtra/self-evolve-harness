@@ -77,9 +77,12 @@ YAGNI / KISS / DRY。コメントは WHY のみ。詳細は `.claude/rules/codin
 言語非依存フック（テンプレ同梱・常に有効）:
 
 - 破壊的コマンドブロック / 機密ファイル・Linter/Formatter/型チェッカー設定の編集ブロック
+- `git commit` 前の秘密情報スキャン（staged 差分に資格情報が混入していたらブロック）
 - セッション開始時: 未処理フィードバック3件以上で AUTO-EVOLVE 通知（→ evolver 起動）／
   環境健全性プローブ（`/doctor`）
 - ユーザー発話の修正語を検出してフィードバック保存を促す（UserPromptSubmit）
+- ハーネス実行ログ（エージェント起動・commit・セッション開始 → `.claude/harness-log.jsonl`）。
+  `/evolve-rules` がルール改善の実測証拠として、`/doctor` が健全性検査として読む
 
 `/harness-init` が検出結果から追加するフック（プロジェクト依存）:
 
