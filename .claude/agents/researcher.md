@@ -4,7 +4,7 @@ description: >
   外部情報調査エージェント。ライブラリ仕様・API・エラー原因・ベストプラクティス等を
   WebSearch / WebFetch で調べ、出典付きで要約を返す。分離コンテキストで調査させ、
   メインの文脈を汚さずに事実を集めたいときに使う。コードは書かない。
-model: sonnet
+model: haiku
 tools:
   - Read
   - WebSearch

@@ -11,7 +11,7 @@ CLAUDE.md/AGENTS.md を生成する。以降はユーザーのフィードバッ
 |------|------|
 | `CLAUDE.md` / `AGENTS.md` | コア原則・ワークフロー・サブエージェント行動規範（`/harness-init` がプレースホルダを埋める） |
 | `.claude/rules/` | coding / testing / architecture / debugging / workflow / memory / domain の規約（`paths` で自動適用） |
-| `.claude/skills/` | `/brainstorm` `/harness-init` `/evolve-rules` `/doctor` `/create-pr` `/address-review` `/self-review` `/create-skill` `/save-session` 等 |
+| `.claude/skills/` | `/brainstorm` `/harness-init` `/evolve-rules` `/create-pr` `/address-review` `/self-review` `/create-skill` `/save-session` 等 |
 | `.claude/agents/` | implementer / reviewer / test-writer / refactorer / design-reviewer / fixer / ci-triage / researcher / evolver |
 | `.claude/settings.json` | 言語非依存の安全フック（破壊コマンド/機密/設定保護ブロック・秘密情報スキャン・AUTO-EVOLVE・健全性プローブ・FB捕捉・実行ログ） |
 | `.github/pull_request_template.md` | PRテンプレート（`workflow.md` の4セクション規定の実体） |
@@ -52,7 +52,7 @@ Claude Code で対象プロジェクトを開き、`/harness-init` を実行す�
 - コード変更依頼 → `/brainstorm` が要件定義→計画→自律実行を仕切る。計画時に wave（並列グループ）が
   割られ、承認後は wave 単位で `implementer` を並列ディスパッチして無質問で完遂する
 - PR のレビュー指摘 → `/address-review` が分類→承認→修正→再push→解決報告まで運ぶ
-- 環境が怪しいとき → `/doctor` で自己診断（実行ログの内訳も確認できる）
+- 環境が怪しいとき → で自己診断（実行ログの内訳も確認できる）
 - フィードバックが溜まると（3件以上）セッション開始時に自動で evolver が起動しハーネスを改善
 
 ## 前提

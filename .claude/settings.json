@@ -13,7 +13,7 @@
           },
           {
             "type": "command",
-            "command": "w=\"\"; command -v engram >/dev/null 2>&1 || w=\"engram未検出 \"; f=\"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/settings.local.json\"; [ -f \"$f\" ] && ! python3 -m json.tool \"$f\" >/dev/null 2>&1 && w=\"${w}settings.local.json不正 \"; [ -n \"$w\" ] && echo \"HARNESS警告: ${w}— /doctor で確認を推奨\"; exit 0"
+            "command": "w=\"\"; command -v engram >/dev/null 2>&1 || w=\"engram未検出 \"; f=\"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/settings.local.json\"; [ -f \"$f\" ] && ! python3 -m json.tool \"$f\" >/dev/null 2>&1 && w=\"${w}settings.local.json不正 \"; [ -n \"$w\" ] && echo \"HARNESS警告: ${w}— bash .claude/scripts/doctor.sh で確認を推奨\"; exit 0"
           },
           {
             "type": "command",

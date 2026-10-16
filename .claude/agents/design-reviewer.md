@@ -4,7 +4,7 @@ description: >
   設計レビューエージェント。brainstorm スキルで作成された設計ドキュメントを
   独立した視点でレビューし、問題点と改善提案を報告する。
   Use proactively when a design spec is written during brainstorming.
-model: opus
+model: sonnet
 tools:
   - Read
   - Bash

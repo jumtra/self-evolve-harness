@@ -3,6 +3,7 @@ name: harness-init
 description: >
   リポジトリ初期化スキル。プロジェクトの言語・ツール・構造を自動検出し、
   hooks・rules・domain.md・CLAUDE.md・AGENTS.md を生成する。新規プロジェクトへのハーネス導入に使う。
+disable-model-invocation: true
 ---
 
 # ハーネス初期化

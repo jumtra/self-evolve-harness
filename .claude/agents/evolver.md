@@ -4,7 +4,7 @@ description: >
   ハーネス進化エージェント。AUTO-EVOLVE 通知（未処理フィードバック3件以上）を受けた
   メインセッションからバックグラウンドでディスパッチされ、蓄積フィードバックを
   ルール・スキル・エージェント・hook へ反映する。ユーザーの依頼と並行して動く。
-model: opus
+model: sonnet
 tools:
   - Read
   - Bash

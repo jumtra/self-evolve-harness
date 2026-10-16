@@ -67,10 +67,10 @@ matcher: `startup`（AUTO-EVOLVE と同じ startup の hooks 配列に併記す�
 
 engram 不在・`settings.local.json` 破損など、致命でないが要注意な劣化を1行警告する。
 **常に `exit 0`**。settings.json 自体の破損は hooks 自体が無効化されるため検査対象外
-（代わりに `/doctor` で明示検査する）。
+（代わりに `bash .claude/scripts/doctor.sh` で明示検査する）。
 
 ```sh
-w=""; command -v engram >/dev/null 2>&1 || w="engram未検出 "; f="${CLAUDE_PROJECT_DIR:-$PWD}/.claude/settings.local.json"; [ -f "$f" ] && ! python3 -m json.tool "$f" >/dev/null 2>&1 && w="${w}settings.local.json不正 "; [ -n "$w" ] && echo "HARNESS警告: ${w}— /doctor で確認を推奨"; exit 0
+w=""; command -v engram >/dev/null 2>&1 || w="engram未検出 "; f="${CLAUDE_PROJECT_DIR:-$PWD}/.claude/settings.local.json"; [ -f "$f" ] && ! python3 -m json.tool "$f" >/dev/null 2>&1 && w="${w}settings.local.json不正 "; [ -n "$w" ] && echo "HARNESS警告: ${w}— bash .claude/scripts/doctor.sh で確認を推奨"; exit 0
 ```
 
 ## Stop: 条件付きCI再実行
