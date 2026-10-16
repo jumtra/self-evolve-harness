@@ -3,6 +3,7 @@ name: create-skill
 description: >
   メタスキル。新しいスキルを作成・テスト・改善するループ。
   新しいワークフローの自動化やプロジェクト固有のタスクをスキル化したいときに使用。
+disable-model-invocation: true
 ---
 
 # スキル作成

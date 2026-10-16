@@ -7,6 +7,19 @@
 
 <PROJECT_OVERVIEW>
 
+## コンテキストの節約
+
+- 別の話題に移るときは `/clear`。同じ作業の途中で重くなったら `/compact`。重さの原因は `/context` で測る
+- **話題やタスクが切り替わったら `/clear` を提案する。** 例：PR をマージして次の依頼に移る、別の機能・別の領域に移る、長い調査のあとに実装へ移る。`/clear` はユーザーが打つ（こちらからは実行できない）ので、返答の最後に 1 行で勧める（「話題が変わるので `/clear` がおすすめです。残す内容は保存済みです」）。先に残すべきもの（進行中の作業・決定待ち・次にやること）は `save-session` かメモリに書いてから勧める。同じ話題の続きでは勧めない。断られたらその話題では繰り返さない
+- 出力が長い作業（テスト・ログ・広い探索）は subagent に任せ、要約だけ受け取る。軽い作業の agent は haiku、実装・レビューは sonnet、行き詰まりの診断だけ opus（`.claude/agents/*.md` の `model:`）
+- 決まった手順は skill ではなくスクリプト・タスクランナー（moon・make など）にする。skill の description は毎ターン載る。手でしか呼ばない skill は `disable-model-invocation: true`
+- 作業の途中でモデル・effort・MCP を切り替えない（キャッシュが切れる）
+- 常時読まれる文（CLAUDE.md・AGENTS.md・`paths:` なしの rules・メモリの索引）は短く保つ。細かい手順は `paths:` つきの rules へ。メモリの索引は 1 行 150 字まで
+
+## Compact instructions
+
+`/compact` で必ず残す：作業中のブランチ・worktree、変更したファイルの一覧、直近の検査の結果と失敗の要点、決まった方針とユーザーの指摘、決定待ちの論点、次にやること。捨ててよい：読んだだけのファイルの全文、成功したコマンドの長い出力。
+
 ## 原則
 
 YAGNI / KISS / DRY。コメントは WHY のみ。詳細は `.claude/rules/coding.md`。
@@ -42,7 +55,7 @@ YAGNI / KISS / DRY。コメントは WHY のみ。詳細は `.claude/rules/codin
 | `debugging.md`    | 差分診断・3ストライク・Scratchpad               | バグ修正時   |
 | `workflow.md`     | Git・PR・並列ディスパッチ・ループ協議           | 常時         |
 | `domain.md`       | 用語・データフロー・Gotchas                     | 常時         |
-| `memory.md`       | Engram 記憶層・セッション保存・ハーネス自動進化 | 常時         |
+| `memory.md`       | ファイルメモリ・セッション保存・ハーネス自動進化 | 常時         |
 
 ルールは「参考情報」ではなく「遵守義務」。変更時は該当 rules を確認してから書き始める。
 
@@ -79,10 +92,10 @@ YAGNI / KISS / DRY。コメントは WHY のみ。詳細は `.claude/rules/codin
 - 破壊的コマンドブロック / 機密ファイル・Linter/Formatter/型チェッカー設定の編集ブロック
 - `git commit` 前の秘密情報スキャン（staged 差分に資格情報が混入していたらブロック）
 - セッション開始時: 未処理フィードバック3件以上で AUTO-EVOLVE 通知（→ evolver 起動）／
-  環境健全性プローブ（`/doctor`）
+  環境健全性プローブ（`bash .claude/scripts/doctor.sh`）
 - ユーザー発話の修正語を検出してフィードバック保存を促す（UserPromptSubmit）
 - ハーネス実行ログ（エージェント起動・commit・セッション開始 → `.claude/harness-log.jsonl`）。
-  `/evolve-rules` がルール改善の実測証拠として、`/doctor` が健全性検査として読む
+  `/evolve-rules` がルール改善の実測証拠として、`bash .claude/scripts/doctor.sh` が健全性検査として読む
 
 `/harness-init` が検出結果から追加するフック（プロジェクト依存）:
 

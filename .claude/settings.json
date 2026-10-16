@@ -9,15 +9,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v engram >/dev/null 2>&1 || exit 0; proj=$(basename \"${CLAUDE_PROJECT_DIR:-$PWD}\"); n=$(engram search \"feedback\" --project \"$proj\" 2>/dev/null | grep -c '\\[feedback\\]'); if [ \"$n\" -ge 3 ]; then echo \"AUTO-EVOLVE: 未処理フィードバックが ${n} 件蓄積されています。Agent ツールで evolver エージェントをバックグラウンド起動してから、ユーザーの依頼に着手してください（並行処理。ユーザーを待たせない）。\"; fi; exit 0"
+            "command": "root=$(dirname \"$(git -C \"${CLAUDE_PROJECT_DIR:-$PWD}\" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)\"); mem=\"$HOME/.claude/projects/$(printf %s \"$root\" | tr \"/.\" \"--\")/memory\"; n=$(grep -l \"^ *evolve: pending\" \"$mem\"/*.md 2>/dev/null | wc -l); if [ \"$n\" -ge 3 ]; then echo \"AUTO-EVOLVE: 未処理フィードバックが ${n} 件蓄積されています（$mem の evolve: pending）。Agent ツールで evolver エージェントをバックグラウンド起動してから、ユーザーの依頼に着手してください（並行処理。ユーザーを待たせない）。\"; fi; exit 0"
           },
           {
             "type": "command",
-            "command": "w=\"\"; command -v engram >/dev/null 2>&1 || w=\"engram未検出 \"; f=\"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/settings.local.json\"; [ -f \"$f\" ] && ! python3 -m json.tool \"$f\" >/dev/null 2>&1 && w=\"${w}settings.local.json不正 \"; [ -n \"$w\" ] && echo \"HARNESS警告: ${w}— /doctor で確認を推奨\"; exit 0"
+            "command": "root=$(dirname \"$(git -C \"${CLAUDE_PROJECT_DIR:-$PWD}\" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)\"); mem=\"$HOME/.claude/projects/$(printf %s \"$root\" | tr \"/.\" \"--\")/memory\"; w=\"\"; [ -f \"$mem/MEMORY.md\" ] || w=\"メモリの索引なし \"; command -v codegraph >/dev/null 2>&1 || w=\"${w}codegraph未検出 \"; f=\"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/settings.local.json\"; [ -f \"$f\" ] && ! python3 -m json.tool \"$f\" >/dev/null 2>&1 && w=\"${w}settings.local.json不正 \"; [ -n \"$w\" ] && echo \"HARNESS警告: ${w}— bash .claude/scripts/doctor.sh で確認を推奨\"; exit 0"
           },
           {
             "type": "command",
-            "command": "n=0; command -v engram >/dev/null 2>&1 && { proj=$(basename \"${CLAUDE_PROJECT_DIR:-$PWD}\"); n=$(engram search \"feedback\" --project \"$proj\" 2>/dev/null | grep -c '\\[feedback\\]'); }; log=\"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/harness-log.jsonl\"; ts=$(date -u +%FT%TZ); printf '{\"ts\":\"%s\",\"event\":\"session_start\",\"pending_feedback\":%s}\\n' \"$ts\" \"$n\" >> \"$log\" 2>/dev/null; exit 0"
+            "command": "root=$(dirname \"$(git -C \"${CLAUDE_PROJECT_DIR:-$PWD}\" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)\"); mem=\"$HOME/.claude/projects/$(printf %s \"$root\" | tr \"/.\" \"--\")/memory\"; n=$(grep -l \"^ *evolve: pending\" \"$mem\"/*.md 2>/dev/null | wc -l); log=\"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/harness-log.jsonl\"; ts=$(date -u +%FT%TZ); printf '{\"ts\":\"%s\",\"event\":\"session_start\",\"pending_feedback\":%s}\\n' \"$ts\" \"$n\" >> \"$log\" 2>/dev/null; exit 0"
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat); p=${input#*\\\"prompt\\\":\\\"}; [ \"$p\" = \"$input\" ] && p=${input#*\\\"prompt\\\": \\\"}; [ \"$p\" = \"$input\" ] && exit 0; p=${p%%\\\"*}; case \"$p\" in *違う*|*ちがう*|*そうじゃな*|*じゃなくて*|*こうして*|*直して*|*やめて*|*戻して*|*revert*) echo \"FEEDBACK検知: memory.md に従い、この指摘を [feedback] として Engram に mem_save してから応答してください（未保存だと自己進化ループが発火しません）。\";; esac; exit 0"
+            "command": "input=$(cat); p=${input#*\\\"prompt\\\":\\\"}; [ \"$p\" = \"$input\" ] && p=${input#*\\\"prompt\\\": \\\"}; [ \"$p\" = \"$input\" ] && exit 0; p=${p%%\\\"*}; case \"$p\" in *違う*|*ちがう*|*そうじゃな*|*じゃなくて*|*こうして*|*直して*|*やめて*|*戻して*|*revert*) echo \"FEEDBACK検知: .claude/rules/memory.md に従い、この指摘を feedback メモリ（metadata に evolve: pending）として保存してから応答してください（未保存だと自己進化ループが発火しません）。\";; esac; exit 0"
           }
         ]
       }
@@ -69,6 +69,15 @@
           {
             "type": "command",
             "command": "input=$(cat); f=${input#*\\\"file_path\\\":\\\"}; [ \"$f\" = \"$input\" ] && f=${input#*\\\"file_path\\\": \\\"}; [ \"$f\" = \"$input\" ] && exit 0; file=${f%%\\\"*}; base=$(basename \"$file\"); case \"$base\" in ruff.toml|dprint.json|.prettierrc*|.eslintrc*|eslint.config.*|biome.json|rustfmt.toml|mypy.ini|pyrightconfig.json) echo \"BLOCKED: Linter/Formatter/型チェッカー設定 $base の変更は禁止されています。変更が必要な場合はユーザーに相談してください。\" >&2; exit 2;; esac; exit 0"
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); a=${input#*\\\"skill\\\":\\\"}; [ \"$a\" = \"$input\" ] && a=${input#*\\\"skill\\\": \\\"}; [ \"$a\" = \"$input\" ] && exit 0; n=${a%%\\\"*}; log=\"${CLAUDE_PROJECT_DIR:-$PWD}/.claude/harness-log.jsonl\"; ts=$(date -u +%FT%TZ); printf '{\"ts\":\"%s\",\"event\":\"skill\",\"name\":\"%s\"}\\n' \"$ts\" \"$n\" >> \"$log\" 2>/dev/null; exit 0"
           }
         ]
       }

@@ -5,6 +5,7 @@ description: >
   to run desloppify, scan for technical debt, get a health score, or create
   a cleanup plan. Do NOT trigger for general code review, renaming, or
   fixing individual bugs.
+disable-model-invocation: true
 ---
 
 <!-- desloppify-begin -->
