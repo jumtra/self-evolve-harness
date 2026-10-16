@@ -43,5 +43,5 @@
 
 - `workflow.md`: Git/PR規約・並列ディスパッチ・ループ協議。CIコマンドは CLAUDE.md 参照（直書きしない）
 - `debugging.md`: 差分診断デバッグ・3ストライク・コンテキスト管理。言語非依存
-- `memory.md`: Engram 運用。言語非依存
+- `memory.md`: ファイルメモリ運用。言語非依存
 - `domain.md`: `/harness-init` が CodeGraph でコードベース調査し実態を埋める

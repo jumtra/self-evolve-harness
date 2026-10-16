@@ -2,7 +2,7 @@
 
 Claude Code 用の**自己進化型ハーネス**テンプレート。任意のプロジェクトに `.claude/` を投入し、
 `/harness-init` を実行すると、言語・ツール・構造を自動検出してルール・フック・ドメイン知識・
-CLAUDE.md/AGENTS.md を生成する。以降はユーザーのフィードバックを Engram（記憶層）に蓄積し、
+CLAUDE.md/AGENTS.md を生成する。以降はユーザーのフィードバックをファイルメモリ（`memory/`）に蓄積し、
 ハーネス自身（ルール/スキル/エージェント/フック）を自律的に改善していく。
 
 ## 何が入っているか
@@ -32,13 +32,13 @@ cp self-evolve-harness/.github/pull_request_template.md <your-project>/.github/
 （`settings.local.json`）・worktree は導入先でも自動的に除外される（ルートの `.gitignore` への
 追記は不要）。
 
-### 2. 必須ツールを導入（記憶層・コードグラフ）
+### 2. 必須ツールを導入（コードグラフ）
 
-- **Engram**（セッション記憶層・SQLite + FTS5・外部 API 不要）: GitHub Releases から
-  バイナリを `~/.local/bin/engram` に配置
+記憶層は組み込みのファイルメモリなので導入不要。
+
 - **CodeGraph**（コードナレッジグラフ）: `curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh`
 
-いずれも `~/.claude.json` の `mcpServers` に stdio MCP として登録する（詳細は `/harness-init` 手順5が自動で案内）。
+`~/.claude.json` の `mcpServers` に stdio MCP として登録する（詳細は `/harness-init` 手順5が自動で案内）。
 
 > エンタープライズで marketplace プラグインがブロックされる環境向けに、stdio MCP を直接登録する方針。
 
@@ -58,7 +58,6 @@ Claude Code で対象プロジェクトを開き、`/harness-init` を実行す�
 ## 前提
 
 - Claude Code（CLI / IDE 拡張いずれか）
-- 記憶・進化機能を使うには Engram が必要（未導入時は該当機能が劣化）
 - ルール・ドキュメントは日本語
 
 ## 状態

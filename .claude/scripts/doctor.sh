@@ -8,16 +8,14 @@ ok() { printf 'OK    %s\n' "$*"; }
 warn() { printf 'WARN  %s\n' "$*"; }
 bad() { printf 'NG    %s\n' "$*"; ng=1; }
 
-# 1. memory layer: Engram or built-in file memory
+# 1. file memory index size (loaded every session; limit 25KB / 200 lines)
 root=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)")
 mem="$HOME/.claude/projects/$(printf %s "$root" | tr '/.' '--')/memory"
-if command -v engram >/dev/null 2>&1; then
-  ok "engram $(engram --version 2>&1 | head -1)"
-elif [ -f "$mem/MEMORY.md" ]; then
+if [ -f "$mem/MEMORY.md" ]; then
   bytes=$(wc -c <"$mem/MEMORY.md")
-  [ "$bytes" -gt 20000 ] && warn "MEMORY.md ${bytes}B (limit 25KB; shorten index lines)" || ok "file memory index ${bytes}B"
+  [ "$bytes" -gt 20000 ] && warn "MEMORY.md ${bytes}B (limit 25KB; shorten index lines to 150 chars)" || ok "MEMORY.md ${bytes}B"
 else
-  warn "no memory layer found (engram missing and $mem/MEMORY.md absent)"
+  warn "no MEMORY.md at $mem"
 fi
 
 # 2. codegraph

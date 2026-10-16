@@ -116,24 +116,9 @@ monorepo の場合は手順1aで取得した各メンバールートを、単一
 
 ### 5. ツールチェーン導入
 
-#### 5a. 必須ツール導入: Engram + CodeGraph
+#### 5a. 必須ツール導入: CodeGraph
 
-##### Engram（セッション記憶層・必須）
-
-セッション活動の記録・検索を提供する Go 単一バイナリ（SQLite + FTS5、外部 API 不要）。
-claude-mem はサードパーティ marketplace プラグインであり、エンタープライズポリシーで
-marketplace がブロックされる環境では使えないため、代わりに stdio MCP の Engram を使う。
-
-1. 導入済み確認: `command -v engram` で配置と PATH 通りを確認し、`engram --version` で動作確認。
-   `command -v` が失敗する場合は配置不足か PATH 未設定（`~/.local/bin` が PATH に入っているか）を切り分ける
-2. バイナリ取得: GitHub Releases から対象プラットフォームの prebuilt バイナリを
-   ダウンロード・展開し `~/.local/bin/engram` に配置
-   （例: `gh release download v<latest> --repo Gentleman-Programming/engram
-   --pattern "engram_*_darwin_arm64.tar.gz" --dir /tmp && tar xzf /tmp/engram_* -C /tmp &&
-   cp /tmp/engram ~/.local/bin/engram && chmod +x ~/.local/bin/engram`）
-3. 動作確認: `engram save "test" "setup test" --project <repo>` で保存、
-   `engram search "test" --project <repo>` で検索できることを確認
-4. `~/.engram/` はユーザーホーム直下なので ignore 不要
+記憶層はツール導入が要らない組み込みのファイルメモリ（`memory/`。規約は `memory.md`）。
 
 ##### CodeGraph（コードナレッジグラフ・必須）
 
@@ -183,7 +168,6 @@ tree-sitter でコード全体をナレッジグラフ化し、MCP サーバー�
 
 | サーバー | 登録方法 | command / args |
 | -------- | -------- | -------------- |
-| Engram | `~/.claude.json` 直接追記（stdio） | `command: ~/.local/bin/engram`, `args: ["mcp"]` |
 | CodeGraph | `codegraph install`（自動構成） | `command: codegraph`, `args: ["serve","--mcp"]` |
 
 1. `~/.claude.json` をバックアップ: `cp ~/.claude.json ~/.claude.json.bak`
@@ -191,11 +175,11 @@ tree-sitter でコード全体をナレッジグラフ化し、MCP サーバー�
    **`python3 -m json.tool ~/.claude.json > /dev/null`** で JSON 整合性を検証する（破損時は `.bak` から復元）
 3. 登録確認: `claude mcp list` で各サーバーが `✔ Connected` であることを確認。
    **user-scope の `~/.claude.json` 直書きは `claude mcp list` に表示されない**（claude.ai 公式リモート MCP のみ表示される）。
-   このため `claude mcp list` に Engram/CodeGraph が出ない場合は正常。**`~/.claude.json` の `mcpServers` を直接確認**して登録を検証する:
+   このため `claude mcp list` に CodeGraph が出ない場合は正常。**`~/.claude.json` の `mcpServers` を直接確認**して登録を検証する:
    ```bash
    python3 -c "import json; print(list(json.load(open('$HOME/.claude.json')).get('mcpServers',{}).keys()))"
    ```
-   `codegraph` / `engram` が含まれていれば登録OK。含まれていなければ手順2の追記が失敗している
+   `codegraph` が含まれていれば登録OK。含まれていなければ手順2の追記が失敗している
 4. 動作確認: 新セッション起動後、各 MCP ツールが呼べることを確認
 
 > 注意: marketplace プラグイン（`claude plugin marketplace add` / `claude plugin install`）は
@@ -218,7 +202,7 @@ tree-sitter でコード全体をナレッジグラフ化し、MCP サーバー�
     "SessionStart": [
       { "matcher": "startup", "hooks": [
           { "type": "command", "command": "<AUTO-EVOLVE 未処理feedback件数チェック>" },
-          { "type": "command", "command": "<健全性プローブ（engram/settings.local.json）>" }
+          { "type": "command", "command": "<健全性プローブ（メモリ索引/codegraph/settings.local.json）>" }
       ] }
     ],
     "UserPromptSubmit": [
@@ -266,7 +250,7 @@ tree-sitter でコード全体をナレッジグラフ化し、MCP サーバー�
 | `architecture.md` | アーキテクチャ検出時 | 構造分析からの依存方向・配置ガイドライン |
 | `workflow.md` | 常に | Git・PR規約の汎用骨格（CIコマンドは CLAUDE.md 参照） |
 | `debugging.md` | 常に | デバッグ規約（言語非依存） |
-| `memory.md` | 常に | メモリ運用規約（Engram ベース） |
+| `memory.md` | 常に | メモリ運用規約（ファイルメモリ） |
 | `domain.md` | 常に | 用語表・データフロー・Gotchas。**スケルトンでなく実態を埋める**（手順8参照） |
 
 #### paths の設定（必須。ここを誤るとルールが一度もロードされない）
@@ -403,7 +387,7 @@ description: ドメイン知識。プロジェクト固有の概念・用語・�
 Rust検出時 `Bash(cargo *)`）。
 
 - 提案のみ。**自動書き換えはしない**（settings.local.json は個人領域）
-- テンプレート同梱の最小セット（git / gh / command -v / engram / codegraph / claude mcp）は前提として維持
+- テンプレート同梱の最小セット（git / gh / command -v / codegraph / claude mcp）は前提として維持
 
 ### 10. 依存監査
 
@@ -434,7 +418,7 @@ grep -rnE '\b(moon|npm|cargo|make|pytest|ruff|dprint|prettier|eslint|rustfmt|bio
 > **承認ゲートの位置**: 手順5（ツールチェーン導入: バイナリ配置・`~/.claude.json` 書き換え）は
 > ユーザー環境全体に影響する副作用を伴う。検出(1-4) → 提示 → **承認** → 実行(5-) の順序を厳守し、
 > 承認前に `~/.claude.json` や `settings.json` を書き換えてはいけない。
-> ユーザー環境側（手順5: Engram/CodeGraph/Desloppify）とリポジトリ側（手順6-9: hooks/rules/CLAUDE.md/AGENTS.md）
+> ユーザー環境側（手順5: CodeGraph/Desloppify）とリポジトリ側（手順6-9: hooks/rules/CLAUDE.md/AGENTS.md）
 > は blast radius が異なるため、可能なら個別に承認を取る。
 
 ## 既存ハーネスがある場合
@@ -444,6 +428,6 @@ grep -rnE '\b(moon|npm|cargo|make|pytest|ruff|dprint|prettier|eslint|rustfmt|bio
 - 不足している hooks を追加提案。`settings.json` と `settings.local.json` の分割（permissions は local、hooks は共有）を尊重し、既存 permissions を上書きしない
 - 不足している rules を追加提案
 - 既存 rules の空セクション（プレースホルダコメントのみ）は手順8で実態に基づいて埋める差分更新を提案。既存の記入済みセクション・Gotcha は上書きしない（手順8e と同じ方針）
-- ツールチェーン（Engram / CodeGraph / Desloppify / SkillSpector）が未導入なら導入を実行
+- ツールチェーン（CodeGraph / Desloppify / SkillSpector）が未導入なら導入を実行
 
 > **差分更新ポリシー（統一）**: domain.md 含む全 rules の差分更新は「空セクションのみ埋める・既存の記入済み内容と Gotcha は保持」で統一する。手順8e とこのセクションで方針が分かれないこと。

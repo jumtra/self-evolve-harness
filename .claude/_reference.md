@@ -18,10 +18,10 @@
 | 秘密情報スキャン       | `git commit` 前に staged 差分を走査し、資格情報（AWS キー・秘密鍵・各種トークン）の混入をブロック（PreToolUse フック。誤検知を避けるため高精度パターンのみ） |
 | ハーネス実行ログ       | エージェント起動・commit・セッション開始を `.claude/harness-log.jsonl` に追記（PreToolUse / SessionStart フック）。`/evolve-rules` の実測証拠、`bash .claude/scripts/doctor.sh` の検査対象 |
 | 完了前テスト           | タスク完了宣言前に CI を再実行（Stop フック）                               |
-| 健全性プローブ         | セッション開始時に engram 不在・settings.local.json 破損を検出し1行警告（SessionStart フック）。詳細は `bash .claude/scripts/doctor.sh` |
+| 健全性プローブ         | セッション開始時に メモリ索引の欠如・codegraph 未検出・settings.local.json 破損を検出し1行警告（SessionStart フック）。詳細は `bash .claude/scripts/doctor.sh` |
 | 要件定義ファースト     | コード変更依頼時に `/brainstorm` を自動実行                    |
 | タスク自動並列実行     | 実装計画の wave（並列グループ）単位で `implementer` を一括ディスパッチ。barrier で境界検証→CI→wave コミット（`workflow.md` + `brainstorm/references/parallel-dispatch.md`） |
-| feedback 捕捉          | ユーザー発話の修正語を UserPromptSubmit フックが検出し、`[feedback]` の Engram 保存を促す（保存自体はエージェントが実行） |
+| feedback 捕捉          | ユーザー発話の修正語を UserPromptSubmit フックが検出し、feedback メモリ（`evolve: pending`）の保存を促す（保存自体はエージェントが実行） |
 | feedback メモリ        | ユーザーの修正・指摘直後に即時保存                             |
 | project メモリ         | 設計判断で選択肢から1つを選んだとき保存                       |
 | セッション保存         | `/create-pr` 後、`/loop` 完了後、セッション終了時に自動実行   |
@@ -38,7 +38,7 @@
 | `/evolve-rules`  | フィードバックと実行ログからルール/スキル/エージェントを進化 |
 | `/save-session`  | 作業コンテキストをメモリに保存                  |
 | `/create-skill`  | 新しいスキルを作成・テスト・配置                |
-| `bash .claude/scripts/doctor.sh`        | ハーネス自己診断。Engram/CodeGraph到達性・JSON妥当性・ダングリング参照を検査 |
+| `bash .claude/scripts/doctor.sh`        | ハーネス自己診断。メモリ索引・CodeGraph到達性・JSON妥当性・ダングリング参照を検査 |
 | `/harness-init`          | リポジトリ初期化。スタック検出→hooks/rules生成  |
 
 ### エージェント（`Agent(subagent_type: "name")` で呼び出し）

@@ -54,7 +54,7 @@ YAGNI / KISS / DRY。コメントは WHY のみ。詳細は `.claude/rules/codin
 | `debugging.md`    | 差分診断・3ストライク・Scratchpad               | バグ修正時   |
 | `workflow.md`     | Git・PR・並列ディスパッチ・ループ協議           | 常時         |
 | `domain.md`       | 用語・データフロー・Gotchas                     | 常時         |
-| `memory.md`       | Engram 記憶層・セッション保存・ハーネス自動進化 | 常時         |
+| `memory.md`       | ファイルメモリ・セッション保存・ハーネス自動進化 | 常時         |
 
 ルールは「参考情報」ではなく「遵守義務」。変更時は該当 rules を確認してから書き始める。
 

@@ -49,12 +49,12 @@ input=$(cat); f=${input#*\"file_path\":\"}; [ "$f" = "$input" ] && f=${input#*\"
 
 matcher: なし（UserPromptSubmit イベント）
 
-ユーザー発話に修正語が含まれたら、応答前に「フィードバックを Engram に保存せよ」という
+ユーザー発話に修正語が含まれたら、応答前に「フィードバックをファイルメモリ（feedback メモリ・`evolve: pending`）に保存せよ」という
 リマインダを stdout でコンテキストに注入する。**ブロックしない・常に `exit 0`（fail-open）**。
-自己進化ループの起点（`[feedback]` 保存）がモデルの気づき任せで漏れるのを防ぐ。
+自己進化ループの起点（feedback メモリの保存）がモデルの気づき任せで漏れるのを防ぐ。
 
 ```sh
-input=$(cat); p=${input#*\"prompt\":\"}; [ "$p" = "$input" ] && p=${input#*\"prompt\": \"}; [ "$p" = "$input" ] && exit 0; p=${p%%\"*}; case "$p" in *違う*|*ちがう*|*そうじゃな*|*じゃなくて*|*こうして*|*直して*|*やめて*|*戻して*|*revert*) echo "FEEDBACK検知: memory.md に従い、この指摘を [feedback] として Engram に mem_save してから応答してください（未保存だと自己進化ループが発火しません）。";; esac; exit 0
+input=$(cat); p=${input#*\"prompt\":\"}; [ "$p" = "$input" ] && p=${input#*\"prompt\": \"}; [ "$p" = "$input" ] && exit 0; p=${p%%\"*}; case "$p" in *違う*|*ちがう*|*そうじゃな*|*じゃなくて*|*こうして*|*直して*|*やめて*|*戻して*|*revert*) echo "FEEDBACK検知: .claude/rules/memory.md に従い、この指摘を feedback メモリ（metadata に evolve: pending）として保存してから応答してください（未保存だと自己進化ループが発火しません）。";; esac; exit 0
 ```
 
 - `prompt` 抽出は file_path と同じくスペース有無の両変異にフォールバックする
@@ -65,12 +65,12 @@ input=$(cat); p=${input#*\"prompt\":\"}; [ "$p" = "$input" ] && p=${input#*\"pro
 
 matcher: `startup`（AUTO-EVOLVE と同じ startup の hooks 配列に併記する）
 
-engram 不在・`settings.local.json` 破損など、致命でないが要注意な劣化を1行警告する。
+メモリ索引の欠如・codegraph 未検出・`settings.local.json` 破損など、致命でないが要注意な劣化を1行警告する。
 **常に `exit 0`**。settings.json 自体の破損は hooks 自体が無効化されるため検査対象外
 （代わりに `bash .claude/scripts/doctor.sh` で明示検査する）。
 
 ```sh
-w=""; command -v engram >/dev/null 2>&1 || w="engram未検出 "; f="${CLAUDE_PROJECT_DIR:-$PWD}/.claude/settings.local.json"; [ -f "$f" ] && ! python3 -m json.tool "$f" >/dev/null 2>&1 && w="${w}settings.local.json不正 "; [ -n "$w" ] && echo "HARNESS警告: ${w}— bash .claude/scripts/doctor.sh で確認を推奨"; exit 0
+root=$(dirname "$(git -C "${CLAUDE_PROJECT_DIR:-$PWD}" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"); mem="$HOME/.claude/projects/$(printf %s "$root" | tr "/." "--")/memory"; w=""; [ -f "$mem/MEMORY.md" ] || w="メモリの索引なし "; command -v codegraph >/dev/null 2>&1 || w="${w}codegraph未検出 "; f="${CLAUDE_PROJECT_DIR:-$PWD}/.claude/settings.local.json"; [ -f "$f" ] && ! python3 -m json.tool "$f" >/dev/null 2>&1 && w="${w}settings.local.json不正 "; [ -n "$w" ] && echo "HARNESS警告: ${w}— bash .claude/scripts/doctor.sh で確認を推奨"; exit 0
 ```
 
 ## Stop: 条件付きCI再実行
