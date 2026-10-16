@@ -30,8 +30,8 @@ done
 
 # 4. dangling /skill references (built-ins and placeholders excluded)
 builtin='loop|schedule|init|config|clear|compact|context|cost|model|mcp|memory|rewind|resume|effort|help|status|hooks|agents|usage|stats|skill-name|name|skills'
-dangling=$(grep -rhoE '`/[a-z][a-z0-9-]+' .claude/rules .claude/skills .claude/agents CLAUDE.md AGENTS.md 2>/dev/null |
-  tr -d '`/' | sort -u | grep -vxE "$builtin" |
+dangling=$(grep -rhoE '`/[a-z][a-z0-9-]+(`| [^`]*`)' .claude/rules .claude/skills .claude/agents CLAUDE.md AGENTS.md 2>/dev/null |
+  sed -E 's/^`\/([a-z0-9-]+).*/\1/' | sort -u | grep -vxE "$builtin" |
   while read -r n; do [ -d ".claude/skills/$n" ] || [ -f ".claude/agents/$n.md" ] || echo "$n"; done)
 [ -z "$dangling" ] && ok "no dangling skill references" || warn "referenced but missing: $(echo "$dangling" | tr '\n' ' ')"
 
