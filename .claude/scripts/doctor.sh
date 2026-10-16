@@ -40,11 +40,23 @@ dangling=$(grep -rhoE '`/[a-z][a-z0-9-]+' .claude/rules .claude/skills .claude/a
 # 5. always-loaded context size (rules without paths:, CLAUDE.md, AGENTS.md)
 total=0
 for f in CLAUDE.md AGENTS.md; do [ -f "$f" ] && total=$((total + $(wc -c <"$f"))); done
-for f in .claude/rules/*.md; do sed -n 1,8p "$f" | grep -q '^paths:' || total=$((total + $(wc -c <"$f"))); done
+for f in .claude/rules/*.md; do [ -f "$f" ] || continue; sed -n 1,8p "$f" | grep -q '^paths:' || total=$((total + $(wc -c <"$f"))); done
 [ "$total" -gt 40000 ] && warn "always-loaded files total ${total}B (move details to paths: rules or scripts)" || ok "always-loaded files ${total}B"
 
 # 6. execution log
 log=.claude/harness-log.jsonl
 if [ -s "$log" ]; then ok "harness-log: $(wc -l <"$log") lines"; grep -o '"event":"[^"]*"' "$log" | sort | uniq -c | sed 's/^/        /'; else warn "harness-log.jsonl empty or missing (ignored by git; may be fresh)"; fi
+
+# 7. skill audit: per-turn description cost and usage (from harness-log "skill" events)
+echo "--- skills (listed = description is loaded every turn)"
+for d in .claude/skills/*/; do
+  n=$(basename "$d"); f="$d/SKILL.md"; [ -f "$f" ] || continue
+  desc=$(awk '/^description:/{sub(/^description: *>? */,"");print;f=1;next} f&&/^  /{print;next} f{exit}' "$f" | wc -c)
+  manual=$(sed -n 1,12p "$f" | grep -c '^disable-model-invocation: true')
+  uses=0; [ -s "$log" ] && uses=$(grep -c "\"event\":\"skill\",\"name\":\"$n\"" "$log")
+  state=listed; [ "$manual" -gt 0 ] && state=manual
+  line=$(printf '%-18s desc=%4sB %-7s uses=%s' "$n" "$desc" "$state" "$uses")
+  if [ "$uses" -eq 0 ] && [ "$state" = listed ] && [ -s "$log" ]; then warn "$line (unused: make manual-only, merge, or turn into a script)"; else ok "$line"; fi
+done
 
 exit $ng
