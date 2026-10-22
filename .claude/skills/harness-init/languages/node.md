@@ -37,9 +37,4 @@
 
 ## architecture-guard
 
-フロント（React/Next）検出時は `components/` `pages/` `app/` の依存方向を守衛。レイヤード検出時は `handlers/` `services/` `models/` の import 方向。
-
-```
-# 例: Next.js で pages/ から components/ への import は許可、逆は禁止等
-# /harness-init が構造分析から個別生成
-```
+フロント（React/Next）検出時は `components/` `pages/` `app/` の依存方向を守衛。レイヤード検出時は `handlers/` `services/` `models/` の import 方向。パターンは `/harness-init` が構造分析から個別生成する。

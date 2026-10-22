@@ -15,30 +15,32 @@
 | アーキテクチャ違反検知 | `/harness-init` が構造分析から生成した依存方向守衛（PostToolUse フック）            |
 | CI ゲート              | git commit 前に `CI_CHECK_CMD` 自動実行（PreToolUse フック）                |
 | 破壊的コマンドブロック | rm -rf / 等を自動ブロック（PreToolUse フック）                              |
-| 秘密情報スキャン       | `git commit` 前に staged 差分を走査し、資格情報（AWS キー・秘密鍵・各種トークン）の混入をブロック（PreToolUse フック。誤検知を避けるため高精度パターンのみ） |
-| ハーネス実行ログ       | エージェント起動・commit・セッション開始を `.claude/harness-log.jsonl` に追記（PreToolUse / SessionStart フック）。`/evolve-rules` の実測証拠、`bash .claude/scripts/doctor.sh` の検査対象 |
+| 秘密情報スキャン       | `git commit` 前に staged 差分の資格情報混入をブロック（PreToolUse。高精度パターンのみ） |
+| ハーネス実行ログ       | エージェント起動・commit・セッション開始を `.claude/harness-log.jsonl` に追記。`/evolve-rules` の実測証拠、`doctor.sh` の検査対象 |
 | 完了前テスト           | タスク完了宣言前に CI を再実行（Stop フック）                               |
 | 健全性プローブ         | セッション開始時に メモリ索引の欠如・codegraph 未検出・settings.local.json 破損を検出し1行警告（SessionStart フック）。詳細は `bash .claude/scripts/doctor.sh` |
 | 要件定義ファースト     | コード変更依頼時に `/brainstorm` を自動実行                    |
-| タスク自動並列実行     | 実装計画の wave（並列グループ）単位で `implementer` を一括ディスパッチ。barrier で境界検証→CI→wave コミット（`workflow.md` + `brainstorm/references/parallel-dispatch.md`） |
+| タスク自動並列実行     | wave（並列グループ）単位で `implementer` を一括ディスパッチ。barrier で境界検証→CI→wave コミット（`workflow.md` + `brainstorm/references/parallel-dispatch.md`） |
 | feedback 捕捉          | ユーザー発話の修正語を UserPromptSubmit フックが検出し、feedback メモリ（`evolve: pending`）の保存を促す（保存自体はエージェントが実行） |
 | feedback メモリ        | ユーザーの修正・指摘直後に即時保存                             |
 | project メモリ         | 設計判断で選択肢から1つを選んだとき保存                       |
 | セッション保存         | `/create-pr` 後、`/loop` 完了後、セッション終了時に自動実行   |
-| ハーネス自動進化       | 未処理 feedback 3件以上で SessionStart フックが evolver エージェントを起動。ルール/スキル/エージェント/hook を自律判定で追加・改修（hook は検証ゲート付き・限定操作） |
+| ハーネス自動進化       | 未処理 feedback 3件以上で SessionStart フックが evolver を起動。rules/skills/agents/hook を自律判定で追加・改修（hook は検証ゲート付き・限定操作） |
+| メモリ索引の自動整理   | 索引が20KB超で SessionStart フックが AUTO-ORGANIZE 通知。段1（完了メモリ削除・索引行の150字圧縮）を確認なしで自動実行（file バックエンドのみ） |
 
 ### スキル（`/skill-name` で手動呼び出し）
 
 | コマンド         | 用途                                            |
 | ---------------- | ----------------------------------------------- |
-| `/brainstorm`    | 要件定義。目的→制約→成功基準→設計→承認→実装計画 |
+| `/brainstorm`    | 要件定義（detail: 目的→制約→成功基準→設計→承認→実装計画 / simple: 一問一答の確認→実装。実行時にモード選択） |
 | `/create-pr`     | PRテンプレートに従ってPR作成                    |
 | `/self-review`   | 並列多観点レビュー。reviewer 4レーン同時 → 重複排除 → Critical の敵対的検証 |
 | `/address-review` | PR レビュー指摘の取り込み→分類→承認→修正→再push→解決報告 |
 | `/evolve-rules`  | フィードバックと実行ログからルール/スキル/エージェントを進化 |
 | `/save-session`  | 作業コンテキストをメモリに保存                  |
 | `/create-skill`  | 新しいスキルを作成・テスト・配置                |
-| `bash .claude/scripts/doctor.sh`        | ハーネス自己診断。メモリ索引・CodeGraph到達性・JSON妥当性・ダングリング参照を検査 |
+| `/harness-sync`  | `.claude/` を正本に AGENTS.md 同期ブロック・`.opencode/agent`、`/command` を生成（Codex/OpenCode 共有） |
+| `bash .claude/scripts/doctor.sh`        | ハーネス自己診断。メモリ索引・CodeGraph到達性・JSON妥当性・ダングリング参照・sync ドリフトを検査 |
 | `/harness-init`          | リポジトリ初期化。スタック検出→hooks/rules生成  |
 
 ### エージェント（`Agent(subagent_type: "name")` で呼び出し）
@@ -73,40 +75,33 @@ PR #123 が green CI、blocking comment なし、main にリベース済みに�
 
 ### [Picrew/awesome-agent-harness](https://github.com/Picrew/awesome-agent-harness)
 
-Agent Harness に関するリソース（プロジェクト、ツール、ベンチマーク、実践ガイド）を300以上まとめたキュレーションリスト。
-9カテゴリ（Harness Architecture、Context Engineering、Execution Substrates、Protocols、Evaluation、Observability、Guardrails、Reference Implementations、Essential Readings）で整理されている。
+Agent Harness 関連リソース300以上のキュレーション。9カテゴリ（Architecture / Context Engineering / Guardrails 等）で整理。
 
 ### [shareAI-lab/learn-claude-code](https://github.com/shareAI-lab/learn-claude-code)
 
-「Bash is all you need」を掲げ、Claude Code のようなエージェントハーネスをゼロから構築する教育用リポジトリ。
-全20レッスンで、ツール実装、メモリ管理、サブエージェント、サンドボックス、コンパクションを段階的に学べる。
+Claude Code 風ハーネスをゼロから構築する教育用リポジトリ。全20レッスンでツール実装・メモリ・サブエージェント・コンパクションを学べる。
 
 ### [anthropics/skills](https://github.com/anthropics/skills)
 
-Claude Code を拡張するための Anthropic 公式スキルリポジトリ。
-SKILL.md フォーマット、references/ による Progressive Disclosure、scripts/ による決定論的自動化、skill-creator メタスキルなどのベストプラクティスを提供。
+Anthropic 公式スキルリポジトリ。SKILL.md フォーマット、references/ による Progressive Disclosure、scripts/ による決定論的自動化のベストプラクティス。
 
 ### [oracle/agent-spec](https://github.com/oracle/agent-spec)
 
-フレームワーク非依存の宣言型エージェント定義言語（Open Agent Spec）。
-Agent / Flow / Tool の3要素で構成され、BranchingNode、ParallelFlowNode、MapNode 等のワークフロー制御、JSON Schema ベースの入出力型検証を定義している。
+フレームワーク非依存の宣言型エージェント定義言語。Agent / Flow / Tool の3要素、ワークフロー制御ノード、JSON Schema ベースの入出力型検証。
 
 ### 参考記事
 
 #### [ループエンジニアリング — 入門から実践まで（Qiita: Syoitu）](https://qiita.com/Syoitu/items/97ed37e7ba9c38dc75d8)
 
-ループエンジニアリングの定義、4層積み上がりモデル（Prompt→Context→Harness→Loop）、5つのアクション（発見・受け渡し・検証・記憶・スケジューリング）。
-CLAUDE.md のループ協議、Stop フック、fixer エージェントの3ファイル構成パターンを提供。
+4層積み上がりモデル（Prompt→Context→Harness→Loop）と5つのアクション。ループ協議、Stop フック、fixer の3ファイル構成パターンを提供。
 
 #### [Loop Engineering 設計ガイド（Zenn: suwash）](https://zenn.dev/suwash/articles/loop-engineering_20260610)
 
-ループの7特徴、6プリミティブ、自律ティア（L1→L2→L3）の段階的昇格モデル。
-Maker-Checker分離、STATE.md による外部状態管理、トークンコストの二次関数的特性と予算管理を体系化。
+7特徴、6プリミティブ、自律ティア（L1→L2→L3）昇格モデル。Maker-Checker分離、STATE.md による外部状態管理、トークン予算管理。
 
 #### [やさしいループエンジニアリング入門（docswell: harinezumi）](https://www.docswell.com/s/harinezumi/K3J9JJ-2026-07-10-202543)
 
-ループが有効な4条件（反復性、機械的失敗検出、自律完結、客観的完成定義）を明確化。
-ループプロトコルを workflow.md のループ協議として体系化し、`/loop` で自律実行する実践パターンを提示。
+ループが有効な4条件（反復性・機械的失敗検出・自律完結・客観的完成定義）。ループプロトコルは workflow.md のループ協議として採用。
 
 ---
 
@@ -222,6 +217,7 @@ AGENTS.md                                    # サブエージェント共通の
 │   ├── testing.md                           # 汎用骨格 + `/harness-init` が言語固有を埋める（paths: tests/**)
 │   ├── debugging.md                         # デバッグ規約（paths: src/**, scripts/**, tests/**)
 │   ├── workflow.md                          # Git・PR規約
+│   ├── memory.md                            # メモリ運用規約。/harness-init が memory-backends/ から選択バックエンドで生成（paths なし・常時）
 │   └── domain.md                            # `/harness-init` が CodeGraph で生成 + Gotchas
 ├── agents/
 │   ├── implementer.md                       # 実装ワーカー（TDD完結・所有ファイル境界・wave 並列）
@@ -245,12 +241,18 @@ AGENTS.md                                    # サブエージェント共通の
 │   │   └── references/ahe-principles.md     # AHE 原則
 │   ├── save-session/SKILL.md                # セッション保存
 │   ├── create-skill/SKILL.md                # メタスキル
+│   ├── harness-sync/SKILL.md                # マルチツール共有（AGENTS.md/.opencode 生成）
 │   ├── scripts/doctor.sh                    # ハーネス自己診断（skill ではなくスクリプト）
-│   └── harness-init/SKILL.md                        # リポジトリ初期化
+│   └── harness-init/                        # リポジトリ初期化
+│       ├── SKILL.md
+│       ├── languages/ task-runners/ shared/ # スタック別モジュール
+│       └── memory-backends/                 # 記憶バックエンド（common + file / engram）
 ├── settings.json                            # チーム共通設定 + hooks
 ├── settings.local.json                      # 個人設定（.gitignore）
 ├── harness-log.jsonl                        # 実行ログ（hook が追記・.gitignore）
 └── _reference.md                            # このファイル
+
+.agent-memory/                               # 記憶層（file バックエンド時。リポジトリにコミットしてツール間共有）
 
 .github/
 └── pull_request_template.md                 # PRテンプレート（workflow.md の4セクション規定の実体）

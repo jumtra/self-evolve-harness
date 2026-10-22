@@ -17,22 +17,20 @@ disable-model-invocation: true
 
 Maximise the **strict score** honestly. Your main cycle: **scan → plan → execute → rescan**. Follow the scan output's **INSTRUCTIONS FOR AGENTS** — don't substitute your own analysis.
 
-**Don't be lazy.** Do large refactors and small detailed fixes with equal energy. If it takes touching 20 files, touch 20 files. If it's a one-line change, make it. No task is too big or too small — fix things properly, not minimally.
+**Don't be lazy.** Do large refactors and small detailed fixes with equal energy. Fix things properly, not minimally.
 
 ## 2. The Workflow
 
-Three phases, repeated as a cycle.
-
 ### Monorepos and multi-project directories
 
-If the workspace contains multiple programs (e.g., frontend + backend in sibling folders), scan each one separately — do not scan the parent directory:
+If the workspace contains multiple programs (e.g., frontend + backend in sibling folders), scan each one separately — each `--path` target should be a single coherent project:
 
 ```bash
 desloppify --lang typescript scan --path ./frontend
 desloppify --lang python scan --path ./backend
 ```
 
-Each `--path` target should be a single coherent project. Scanning a parent that contains multiple programs mixes state and path context, producing unreliable results.
+Scanning a parent that contains multiple programs mixes state and path context, producing unreliable results.
 
 ### Phase 1: Scan and review — understand the codebase
 
@@ -43,7 +41,7 @@ desloppify status              # check scores — are we at target?
 
 After scanning, **always run `desloppify next`** — it tells you exactly what to do, in order. Don't interpret the scan output yourself or ask the user what to do. Just run `next` and follow its instructions.
 
-The scan will tell you if subjective dimensions need review. Follow its instructions. To trigger a review manually:
+The scan will tell you if subjective dimensions need review. To trigger a review manually:
 ```bash
 desloppify review --prepare    # then follow your runner's review workflow
 ```
@@ -61,7 +59,7 @@ desloppify plan triage --complete --strategy "execution plan..."
 
 For automated triage: `desloppify plan triage --run-stages --runner codex` (Codex), `--runner claude` (Claude), or `--runner rovodev` (Rovo Dev). Options: `--only-stages`, `--dry-run`, `--stage-timeout-seconds`.
 
-Then shape the queue. **The plan shapes everything `next` gives you** — `next` is the execution queue, not the full backlog. Don't skip this step.
+Then shape the queue. **The plan shapes everything `next` gives you** — `next` is the execution queue, not the full backlog:
 
 ```bash
 desloppify plan                          # see the living plan details
@@ -76,7 +74,7 @@ desloppify plan skip <pat>              # defer — hide from next
 
 Trust the plan and execute. Don't rescan mid-queue — finish the queue first.
 
-**Branch first.** Create a dedicated branch — never commit health work directly to main:
+**Branch first.** Never commit health work directly to main:
 ```bash
 git checkout -b desloppify/code-health    # or desloppify/<focus-area>
 desloppify config set commit_pr 42        # link a PR for auto-updated descriptions
@@ -104,7 +102,7 @@ git push -u origin desloppify/code-health
 Score may temporarily drop after fixes — cascade effects are normal, keep going.
 If `next` suggests an auto-fixer, run `desloppify autofix <fixer> --dry-run` to preview, then apply.
 
-**When the queue is clear, go back to Phase 1.** New issues will surface, cascades will have resolved, priorities will have shifted. This is the cycle.
+**When the queue is clear, go back to Phase 1.** New issues will surface, cascades will have resolved, priorities will have shifted.
 
 ## 3. Reference
 
@@ -218,7 +216,7 @@ desloppify plan commit-log pr                   # preview PR body markdown
 desloppify config set commit_tracking_enabled false  # disable guidance
 ```
 
-After resolving findings as `fixed`, the tool shows uncommitted work, committed history, and a suggested commit message. After committing externally, run `record` to move findings from uncommitted to committed and auto-update the linked PR description.
+After committing externally, run `record` to move findings from uncommitted to committed and auto-update the linked PR description.
 
 ### Agent directives
 
@@ -254,24 +252,12 @@ When desloppify itself appears wrong or inconsistent — a bug, a bad detection,
 
 ### Fix and PR (preferred)
 
-Clone the tool repo to a temp directory, make the fix there, and verify it works against the project you're scanning before pushing.
-
 ```bash
 git clone https://github.com/peteromallet/desloppify.git /tmp/desloppify-fix
-cd /tmp/desloppify-fix
-git checkout -b fix/<short-description>
-```
-
-Make your changes, then run the test suite and verify the fix against the original project:
-
-```bash
+cd /tmp/desloppify-fix && git checkout -b fix/<short-description>
+# make your changes, then:
 python -m pytest desloppify/tests/ -q
-python -m desloppify scan --path <project-root>   # the project you were scanning
-```
-
-Once it looks good, push and open a PR:
-
-```bash
+python -m desloppify scan --path <project-root>   # verify against the scanned project
 git add <files> && git commit -m "fix: <what and why>"
 git push -u origin fix/<short-description>
 gh pr create --title "fix: <short description>" --body "$(cat <<'EOF'

@@ -14,7 +14,7 @@ tools:
 
 # ハーネス進化
 
-ファイルメモリ（`memory/`）に蓄積されたフィードバックを分析し、ハーネス（rules / skills / agents / hooks / CLAUDE.md / AGENTS.md）を進化させる。
+記憶層に蓄積されたフィードバックを分析し、ハーネス（rules / skills / agents / hooks / CLAUDE.md / AGENTS.md）を進化させる。
 
 ## 手順
 
@@ -22,16 +22,19 @@ tools:
    このファイルには複製しない
 2. SKILL.md を**自動モード**で実行する（収集 → 分析 → アーティファクト判定 →
    適用 → 処理済みマーク → changelog）
-3. メモリへは Read / Bash（`grep`）/ Edit で直接アクセスする。置き場所は
-   `~/.claude/projects/<リポジトリの根の / を - にしたもの>/memory/`（根は
-   `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`。詳細は `.claude/rules/memory.md`）
+3. 記憶層へのアクセス方法と置き場所は `.claude/rules/memory.md` のバックエンド節に従う
+   （file バックエンド: `<リポジトリの根>/.agent-memory/` へ Read / Bash(`grep`) / Edit で直接アクセス。
+   根は `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`。
+   engram バックエンド: Engram MCP の保存・検索ツール経由。
+   **engram 選択時は frontmatter の `tools` に `mcp__engram__*` を追加しておくこと**
+   （無いと記憶を読み書きできない。`harness-init` 手順5d が生成時に追加する））
 
 ## 制約
 
 - 変更は作業ツリーへの適用まで。**コミットは絶対にしない**
 - 変更してよいのは `.claude/` 配下・`CLAUDE.md`・`AGENTS.md`・`docs/harness-changelog.md`、
-  およびメモリディレクトリ（処理済みの metadata 書き換え・lesson ファイルの作成・
-  反映し終えたファイルと `MEMORY.md` の行の削除）だけ。それ以外のファイルは変更しない
+  および記憶層（処理済みの metadata 書き換え・lesson の作成・
+  反映し終えた記憶と索引 `MEMORY.md` の行の削除）だけ。それ以外のファイルは変更しない
 - ユーザーへの質問はできない。判断に迷ったら軽い方（ルール < スキル < エージェント）
   を選ぶか、見送って報告に残す
 - **hook（`.claude/settings.json`）の変更は SKILL の必須検証ゲート

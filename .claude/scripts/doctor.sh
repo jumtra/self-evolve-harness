@@ -8,14 +8,16 @@ ok() { printf 'OK    %s\n' "$*"; }
 warn() { printf 'WARN  %s\n' "$*"; }
 bad() { printf 'NG    %s\n' "$*"; ng=1; }
 
-# 1. file memory index size (loaded every session; limit 25KB / 200 lines)
+# 1. memory backend (file: .agent-memory index size — loaded every session; limit 25KB / 200 lines)
 root=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)")
-mem="$HOME/.claude/projects/$(printf %s "$root" | tr '/.' '--')/memory"
-if [ -f "$mem/MEMORY.md" ]; then
+mem="$root/.agent-memory"
+if grep -q "記憶バックエンド: engram" .claude/rules/memory.md 2>/dev/null; then
+  ok "memory backend: engram (index lives in Engram; file checks skipped)"
+elif [ -f "$mem/MEMORY.md" ]; then
   bytes=$(wc -c <"$mem/MEMORY.md")
   [ "$bytes" -gt 20000 ] && warn "MEMORY.md ${bytes}B (limit 25KB; shorten index lines to 150 chars)" || ok "MEMORY.md ${bytes}B"
 else
-  warn "no MEMORY.md at $mem"
+  warn "no MEMORY.md at $mem (file backend; run /harness-init or create .agent-memory/MEMORY.md)"
 fi
 
 # 2. codegraph
@@ -45,7 +47,16 @@ for f in .claude/rules/*.md; do [ -f "$f" ] || continue; sed -n 1,8p "$f" | grep
 log=.claude/harness-log.jsonl
 if [ -s "$log" ]; then ok "harness-log: $(wc -l <"$log") lines"; grep -o '"event":"[^"]*"' "$log" | sort | uniq -c | sed 's/^/        /'; else warn "harness-log.jsonl empty or missing (ignored by git; may be fresh)"; fi
 
-# 7. skill audit: per-turn description cost and usage (from harness-log "skill" events)
+# 7. multi-tool sync drift (skip if /harness-sync was never run)
+if [ -d .opencode ] || grep -q "BEGIN HARNESS-SYNC" AGENTS.md 2>/dev/null; then
+  grep -q "BEGIN HARNESS-SYNC" AGENTS.md 2>/dev/null && ok "AGENTS.md has HARNESS-SYNC block" || warn "AGENTS.md missing HARNESS-SYNC block (run /harness-sync)"
+  if [ -d .opencode/agent ]; then
+    src=$(ls .claude/agents/*.md 2>/dev/null | wc -l); gen=$(ls .opencode/agent/*.md 2>/dev/null | wc -l)
+    [ "$src" -eq "$gen" ] && ok "opencode agents in sync ($gen/$src)" || warn "opencode agents out of sync: generated $gen vs .claude/agents $src (run /harness-sync)"
+  fi
+fi
+
+# 8. skill audit: per-turn description cost and usage (from harness-log "skill" events)
 echo "--- skills (listed = description is loaded every turn)"
 for d in .claude/skills/*/; do
   n=$(basename "$d"); f="$d/SKILL.md"; [ -f "$f" ] || continue

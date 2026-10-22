@@ -2,7 +2,8 @@
 name: harness-init
 description: >
   リポジトリ初期化スキル。プロジェクトの言語・ツール・構造を自動検出し、
-  hooks・rules・domain.md・CLAUDE.md・AGENTS.md を生成する。新規プロジェクトへのハーネス導入に使う。
+  hooks・rules・domain.md・CLAUDE.md・AGENTS.md を生成する。新規プロジェクトへの導入と、
+  既存ハーネス（既存 .claude/・CLAUDE.md 等）への重ね掛け適用の両方に使う。
 disable-model-invocation: true
 ---
 
@@ -16,11 +17,9 @@ disable-model-invocation: true
 
 ### 検出の基本方針（ロバスト性）
 
-検出は**推測（ファイル名パターンマッチ）でなく、ツール自身の公開APIへの問い合わせで決定論的に**行う。
-ヒューリスティック（実装詳細や実行時挙動の観測による推測）は不可。ツールが自己報告する値を取り、
-取れなければ設定ファイルの構造化パースにフォールバックする。
-
-検出結果は中間产物として扱い、手順11の承認を経てから実行に使う。消失を防ぐため、検出結果は
+検出は**推測（実装詳細や実行時挙動の観測によるヒューリスティック）でなく、ツール自身の公開APIへの
+問い合わせで決定論的に**行う。取れなければ設定ファイルの構造化パースにフォールバックする。
+検出結果は中間産物として扱い、手順11の承認を経てから実行に使う。消失を防ぐため、
 スクラッチパッドの JSON（`init-detection.json`）に逐次書き出す。
 
 ### 1. スタック検出
@@ -112,17 +111,17 @@ monorepo の場合は手順1aで取得した各メンバールートを、単一
 - `handlers/` + `models/` + `services/` → MVC / レイヤードアーキテクチャ
 - フラット構造 → 規約不要と判断し、architecture.md の生成をスキップ
 
-> 本分析結果は手順7（architecture.md 生成）の元ネタとする。フラット構造は architecture.md 生成をスキップする。
+本分析結果は手順7（architecture.md 生成）の元ネタとする。
 
 ### 5. ツールチェーン導入
 
 #### 5a. 必須ツール導入: CodeGraph
 
-記憶層はツール導入が要らない組み込みのファイルメモリ（`memory/`。規約は `memory.md`）。
+記憶層は選択式（手順5d。file バックエンド既定で導入不要。engram は MCP サーバー利用）。
 
 ##### CodeGraph（コードナレッジグラフ・必須）
 
-tree-sitter でコード全体をナレッジグラフ化し、MCP サーバーで提供する。シンボル・呼び出し関係・影響範囲を1回のツール呼び出しで取得可能。**domain.md 生成（手順8）で必須使用する。**
+tree-sitter でコード全体をナレッジグラフ化し、MCP サーバーで提供する。シンボル・呼び出し関係・影響範囲を1回のツール呼び出しで取得可能。**domain.md 生成（手順8）で必須。未導入は許容しない。**
 
 1. 導入済み確認: `command -v codegraph` で配置と PATH 通りを確認し、`codegraph --version` で動作確認
 2. インストール実行: `curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh`
@@ -130,8 +129,6 @@ tree-sitter でコード全体をナレッジグラフ化し、MCP サーバー�
 4. ignore 確認: **`git check-ignore -v .codegraph`** で除外状態を検証。
    `.gitignore` に未登録なら追記する。**`.git/info/exclude` で除外されている場合は注意**:
    これは個人ローカル設定でコミットされないため、別環境では無視されない。リポジトリ共有の `.gitignore` に移すようユーザーに提案する
-
-> CodeGraph は domain.md 生成（手順8）で必須使用する。未導入は許容しない。
 
 #### 5b. 任意ツール導入（個別ヒアリング）
 
@@ -185,24 +182,50 @@ tree-sitter でコード全体をナレッジグラフ化し、MCP サーバー�
 > 注意: marketplace プラグイン（`claude plugin marketplace add` / `claude plugin install`）は
 > ポリシーでブロックされるため使わない。サードパーティツールも stdio MCP として直接登録する。
 
+#### 5d. 記憶バックエンド選択
+
+ユーザーに記憶バックエンドを確認する（選択式を優先）:
+
+| バックエンド | 内容 | 導入 |
+|---|---|---|
+| `file`（既定） | リポジトリローカル `.agent-memory/`（Markdown + 索引 `MEMORY.md`）。Codex / OpenCode など他ツールとそのまま共有できる | 不要 |
+| `engram` | Engram MCP サーバー。記憶は Engram 側に保存され、ツールごとに engram MCP を登録すれば共有できる | 各ツールへ MCP 登録 |
+
+1. 選択結果を `MEMORY_BACKEND` として `init-detection.json` に記録する
+2. `file` 選択時: `.agent-memory/MEMORY.md` が無ければ種ファイル（索引ヘッダのみ）を作成する
+   （テンプレ同梱の `.agent-memory/MEMORY.md` をコピー済みならスキップ）
+2. `engram` 選択時: `~/.claude.json` の `mcpServers` に `engram` が登録済みか確認する
+   （手順5c と同じ検証方法）。未登録なら登録案を提示してユーザーの承認を得る。
+   さらに `.claude/agents/evolver.md` の frontmatter `tools` に `mcp__engram__*` を追加する
+   （追加しないと evolver が記憶を読み書きできない）。
+   他ツール（Codex/OpenCode 等）への登録は手順12 の `/harness-sync` が扱う
+3. この選択が手順6（SessionStart フックのバリアント）と手順7（`memory.md` の合成）に効く
+
 ### 6. hooks 生成（モジュール合成）
 
 `shared/hooks-boilerplate.md` をベースに、検出結果から合成する:
 
-1. **言語非依存フック**: `shared/hooks-boilerplate.md` の破壊コマンドブロック・機密ファイルブロック・設定保護ブロック・Stop・**UserPromptSubmit フィードバック捕捉・SessionStart 健全性プローブ・SessionStart AUTO-EVOLVE** を常に含む
+1. **言語非依存フック**: `shared/hooks-boilerplate.md` の破壊コマンドブロック・機密ファイルブロック・設定保護ブロック・Stop・**UserPromptSubmit フィードバック捕捉・SessionStart 健全性プローブ・SessionStart AUTO-EVOLVE** を常に含む。
+   SessionStart 系は記憶バックエンド（手順5d）で変わる（詳細は hooks-boilerplate.md の各節）:
+   - file: AUTO-EVOLVE は grep 件数チェック + **索引注入フックを追加**
+   - engram: AUTO-EVOLVE は指示注入型。索引注入なし。プローブからメモリ索引チェックを除く
 2. **フォーマッタフック**: 検出した全言語の `languages/*.md` の `formatter` セクションを1つの case 文に OR 束ね（PostToolUse, matcher: `Write|Edit|NotebookEdit`）
 3. **アーキテクチャ守衛フック**: 検出した言語の `languages/*.md` の `architecture-guard` を合成（PostToolUse, matcher: `Write|Edit`）。フラット構造はスキップ
 4. **CIゲートフック**: 代表タスクランナーの `task-runners/*.md` の `hook-template` を合成（PreToolUse, matcher: `Bash`, timeout: 300）
 
-モノレポ時は全検出言語の formatter case を束ねる。設定保護ブロックは手順3の検出結果から保護対象ファイルリストを動的生成する。
+モノレポ時は全検出言語の formatter case を束ねる。設定保護ブロックは手順3の検出結果から
+保護対象ファイルリストを動的生成する。CI ゲートにはタイムスタンプキャッシュを含める
+（task-runners/*.md の雛形通り）。
 
 ```json
 {
   "hooks": {
     "SessionStart": [
       { "matcher": "startup", "hooks": [
-          { "type": "command", "command": "<AUTO-EVOLVE 未処理feedback件数チェック>" },
-          { "type": "command", "command": "<健全性プローブ（メモリ索引/codegraph/settings.local.json）>" }
+          { "type": "command", "command": "<AUTO-EVOLVE（バックエンド別: file=未処理feedback件数チェック / engram=指示注入）>" },
+          { "type": "command", "command": "<健全性プローブ（メモリ索引※fileのみ/codegraph/settings.local.json）>" },
+          { "type": "command", "command": "<メモリ索引注入（file バックエンドのみ）>" },
+          { "type": "command", "command": "<AUTO-ORGANIZE（file バックエンドのみ: 索引20KB超で段1自動整理を指示）>" }
       ] }
     ],
     "UserPromptSubmit": [
@@ -230,18 +253,15 @@ tree-sitter でコード全体をナレッジグラフ化し、MCP サーバー�
 }
 ```
 
-- フォーマッタは言語に応じた拡張子分岐を生成する
-- CI ゲートにはタイムスタンプキャッシュを含める
-- 破壊的コマンドブロック・機密ファイル編集ブロックは言語非依存で常に含める
-
 ### 7. rules 生成（モジュール合成）
 
-`shared/rules-skeleton.md` をベースに合成する:
-
-1. **coding.md**: 骨格（言語非依存）の「言語固有規約」セクションに、検出した言語の `languages/*.md` の `coding-rules` をマージ。モノレポ時は言語別サブセクションとして併記
-2. **testing.md**: 同様に「言語固有規約」セクションに `testing-rules` をマージ
-3. **architecture.md**: 手順4のディレクトリ構造分析から生成。層構造・依存方向・配置ガイドライン・禁止パターン。フラット構造はスキップ
-4. **workflow.md / debugging.md / memory.md**: テンプレート時点の内容をそのまま（CIコマンドは CLAUDE.md 参照）
+`shared/rules-skeleton.md` をベースに合成する。workflow.md / debugging.md はテンプレート時点の
+内容をそのまま使う（CIコマンドは CLAUDE.md 参照）。言語固有部分は `languages/*.md` の
+`coding-rules` / `testing-rules` を各ファイルの「言語固有規約」セクションにマージする
+（モノレポ時は言語別サブセクションとして併記）。memory.md は `memory-backends/common.md` と
+手順5dで選択されたバックエンド（`memory-backends/file.md` / `memory-backends/engram.md`）を
+**連結して生成**する。先頭に既存テンプレと同じ frontmatter・バックエンド注記コメントを付ける
+（テンプレの `.claude/rules/memory.md` が完成例）。
 
 | ファイル | 生成条件 | 内容 |
 |---|---|---|
@@ -250,7 +270,7 @@ tree-sitter でコード全体をナレッジグラフ化し、MCP サーバー�
 | `architecture.md` | アーキテクチャ検出時 | 構造分析からの依存方向・配置ガイドライン |
 | `workflow.md` | 常に | Git・PR規約の汎用骨格（CIコマンドは CLAUDE.md 参照） |
 | `debugging.md` | 常に | デバッグ規約（言語非依存） |
-| `memory.md` | 常に | メモリ運用規約（ファイルメモリ） |
+| `memory.md` | 常に | メモリ運用規約（`memory-backends/common.md` + 手順5dの選択バックエンドを連結） |
 | `domain.md` | 常に | 用語表・データフロー・Gotchas。**スケルトンでなく実態を埋める**（手順8参照） |
 
 #### paths の設定（必須。ここを誤るとルールが一度もロードされない）
@@ -302,16 +322,16 @@ tree-sitter でコード全体をナレッジグラフ化し、MCP サーバー�
 | ディレクトリの使い分け | 実在するディレクトリとその役割・依存方向を表にする。 |
 | データフロー | 入力から出力までの流れをコードブロック（矢印図）で記述。実在する関数・クラス名を載せる。 |
 | タスク体系 | 検出した CI/タスクコマンドを表にする。 |
-| Gotchas | 「合理的にこうだろうと思って間違えやすい事実」のみ。既存の Gotcha は**保持**し、新しいものを前に追記する。コードから裏取りした事実だけを書く（推測禁止）。 |
+| Gotchas | 「合理的にこうだろうと思って間違えやすい事実」のみ（基準は手順8c）。既存の Gotcha は**保持**し、新しいものを前に追記する。コードから裏取りした事実だけを書く（推測禁止）。 |
 
 #### 8c. Gotcha の基準（書くべきもの・書かざるべきもの）
 
-- ✅ 書く: コードを読まないと合理的に想定してしまう誤解（例: 「API は常に HTTP 200、本当のステータスは body の `code`」「全トピックを1回の LLM 呼び出しで生成」）
+- ✅ 書く: コードを読まないと合理的に想定してしまう誤解（例: 「API は常に HTTP 200、本当のステータスは body の `code`」）
 - ❌ 書かない: 単なる事実説明・What の記述・推測・一般的なベストプラクティス
 
 #### 8d. テンプレート
 
-初回生成時の骨格として以下を使うが、**各セクションは必ず実態で埋める**。プレースホルダコメントを残したまま出力してはいけない。
+初回生成時の骨格（各セクションは必ず実態で埋める。プレースホルダのまま出力しない）:
 
 ```markdown
 ---
@@ -355,8 +375,7 @@ description: ドメイン知識。プロジェクト固有の概念・用語・�
 
 #### 8e. 既存ハーネスがある場合
 
-`domain.md` が既存の場合は、空セクション（プレースホルダコメントのみ）だけを埋める差分更新とする。
-既存の記入済みセクション・Gotcha は上書きしない。
+既存 `domain.md` も手順7の「差分更新」（空セクションのみ埋める・記入済み内容と Gotcha は保持）に従う。
 
 ### 9. CLAUDE.md / AGENTS.md 生成
 
@@ -421,13 +440,31 @@ grep -rnE '\b(moon|npm|cargo|make|pytest|ruff|dprint|prettier|eslint|rustfmt|bio
 > ユーザー環境側（手順5: CodeGraph/Desloppify）とリポジトリ側（手順6-9: hooks/rules/CLAUDE.md/AGENTS.md）
 > は blast radius が異なるため、可能なら個別に承認を取る。
 
-## 既存ハーネスがある場合
+### 12. マルチツール同期（/harness-sync）
 
-`.claude/` が既に存在する場合は、差分のみを提案する（既存ファイルは上書きしない・マージ提案のみ）:
+承認・書き出し後、Codex / OpenCode など他ツールの利用有無を確認する。
+利用する場合は `/harness-sync` を実行する（AGENTS.md 同期ブロック・`.opencode/` 生成・
+engram バックエンド時の各ツール MCP 登録案内）。
+手順は `.claude/skills/harness-sync/SKILL.md` が単一ソース（ここに複製しない）。
 
-- 不足している hooks を追加提案。`settings.json` と `settings.local.json` の分割（permissions は local、hooks は共有）を尊重し、既存 permissions を上書きしない
-- 不足している rules を追加提案
-- 既存 rules の空セクション（プレースホルダコメントのみ）は手順8で実態に基づいて埋める差分更新を提案。既存の記入済みセクション・Gotcha は上書きしない（手順8e と同じ方針）
+## 既存ハーネスがある場合（重ね掛け適用）
+
+`.claude/` や CLAUDE.md / AGENTS.md が既に存在する場合（このテンプレ由来でなくてもよい）は
+**既存を保持したまま重ねる**ことを既定とし、差分のみを提案する（上書きしない・削除しない）。
+
+まず既存構成を棚卸ししてから提示する: 既存の rules / skills / agents / hooks / CLAUDE.md・
+AGENTS.md の各見出しを list し、どこと競合するかを明記する。
+
+競合解決（ファイル種別ごとの既定）:
+
+| 対象 | 同じファイルが既存の場合 |
+|---|---|
+| `skills/` `agents/` | 既存を保持。同名は差分の提示のみ（ユーザー承認があっても既存の記述は消さない。統合する場合は内容を併記し、矛盾箇所だけ提案する） |
+| `rules/` | 差分更新ポリシー（下記）に従い空セクションのみ埋める。メモリ運用が既存にあれば、`.agent-memory/` への移行の是非を提案（移行手順は `rules/memory.md` の段3に準拠） |
+| `settings.json` | hooks は配列に**追加マージ**（同目的の既存フックがあれば既存を優先し追加しない）。既存 permissions は触らない（settings.local.json は個人領域） |
+| `CLAUDE.md` / `AGENTS.md` | 既存を保持し、このハーネス由来の不足セクション（ワークフロー・品質ゲート・コンテキスト節約等）のみ末尾へ追記して提案 |
+
+- 不足している hooks・rules は追加提案する
 - ツールチェーン（CodeGraph / Desloppify / SkillSpector）が未導入なら導入を実行
 
-> **差分更新ポリシー（統一）**: domain.md 含む全 rules の差分更新は「空セクションのみ埋める・既存の記入済み内容と Gotcha は保持」で統一する。手順8e とこのセクションで方針が分かれないこと。
+> **差分更新ポリシー（統一）**: 全 rules（domain.md 含む）は「空セクションのみ埋める・記入済み内容と Gotcha は保持」で統一。

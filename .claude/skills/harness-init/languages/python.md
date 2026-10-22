@@ -11,8 +11,6 @@
 *.py) black --quiet "$file" 2>/dev/null;;  # ruff 未検出時
 ```
 
-モノレポ時は他言語の formatter case と OR 束ねする。
-
 ## linter
 
 - ruff: `ruff check`
