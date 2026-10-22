@@ -38,3 +38,12 @@
 ## architecture-guard
 
 フロント（React/Next）検出時は `components/` `pages/` `app/` の依存方向を守衛。レイヤード検出時は `handlers/` `services/` `models/` の import 方向。パターンは `/harness-init` が構造分析から個別生成する。
+
+## recommended-tooling
+
+検出ゼロ時の推奨（手順3b で提案に使う）:
+
+| 用途 | 推奨 | 導入 | 最小設定 |
+|---|---|---|---|
+| formatter / linter | biome（eslint+prettier を統合） | `npm i -D @biomejs/biome` と `npx biome init` | 生成される `biome.json` |
+| typechecker | tsc | `npm i -D typescript` | `npx tsc --init` で生成 |

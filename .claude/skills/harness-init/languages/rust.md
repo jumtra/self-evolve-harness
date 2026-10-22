@@ -33,3 +33,12 @@
 ## architecture-guard
 
 ワークスペース検出時、各クレートの `src/lib.rs` と `src/main.rs` の依存方向を守衛。`domain` 相当クレートが `infrastructure` 相当クレートに依存しないよう `grep` 守衛。
+
+## recommended-tooling
+
+検出ゼロ時の推奨（手順3b で提案に使う。rustup 管理なら両方コンポーネント追加で済む）:
+
+| 用途 | 推奨 | 導入 | 最小設定 |
+|---|---|---|---|
+| formatter | rustfmt | `rustup component add rustfmt` | 設定不要（`.rustfmt.toml` は任意） |
+| linter | clippy | `rustup component add clippy` | 設定不要 |

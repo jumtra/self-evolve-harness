@@ -35,3 +35,13 @@
 ## architecture-guard
 
 `cmd/` `internal/` `pkg/` 構成検出時、`internal/` 配下のパッケージ依存方向を守衛。ドメイン層パッケージがインフラ層パッケージを import しないよう `grep` 守衛。
+
+## recommended-tooling
+
+検出ゼロ時の推奨（手順3b で提案に使う。formatter は gofmt 標準搭載のため通常 linter のみ）:
+
+| 用途 | 推奨 | 導入 | 最小設定 |
+|---|---|---|---|
+| linter | golangci-lint | `go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest`（または brew） | 設定不要（デフォルトの有効リンタで動作） |
+
+goimports 未導入ならあわせて `go install golang.org/x/tools/cmd/goimports@latest` を提案する。

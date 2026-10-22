@@ -33,6 +33,8 @@ disable-model-invocation: true
 | `Cargo.toml` | Rust |
 | `go.mod` | Go |
 | `pom.xml`, `build.gradle` | Java |
+| `CMakeLists.txt`, `compile_commands.json`, `*.c/*.cpp` | C / C++ |
+| `*.csproj`, `*.sln` | C# |
 
 上記いずれにも該当しない場合(または検出言語に対応する `languages/*.md` がない場合)は、
 `languages/_generic.md` の検出プロトコルで対応する。標準ツール候補を `command -v` +
@@ -101,6 +103,18 @@ python3 -c "import tomllib; ..." 2>/dev/null \
 型チェッカー（mypy / pyright）は検出結果を `TYPECHECKER` にも記録し、手順6の保護対象に含める。
 
 検出結果を `FORMATTER` / `LINTER` / `TYPECHECKER` および**保護対象設定ファイルリスト**として `init-detection.json` に記録する。
+
+#### 3b. 不足ツールの導入提案（任意・承認制）
+
+検出した言語のうち formatter と linter が**両方未検出**の言語があれば、
+`languages/<lang>.md` の `## recommended-tooling` 節の推奨（1組）を「導入しますか?」と提示する:
+
+- ユーザー承認後にのみ導入する（自動インストールしない。候補の列挙のみで導入を強行しない）
+- 承認後は節の記載どおりエコシステム標準の方法でインストールし、最小設定ファイルを生成する
+- 導入したツールと設定ファイルを検出結果（FORMATTER/LINTER/TYPECHECKER・保護対象リスト）に追加し、
+  以降の手順（フォーマッタフック・設定保護ブロック・CIゲート）に反映する
+- 「導入しない」を選ばれたらスキップ。検出ゼロのまま扱い、推測でコマンドを書かない（従来方針どおり）
+- brew などシステムを変更する方法が候補なら、その旨も承認の提示に明記する
 
 ### 4. ディレクトリ構造分析
 

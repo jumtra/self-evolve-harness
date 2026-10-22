@@ -39,3 +39,14 @@
 
 レイヤード/ヘキサゴナル構成（`domain/` `application/` `infrastructure/` 等のパッケージ）検出時、
 `domain` パッケージが `infrastructure` を import しないよう `grep` 守衛（他言語モジュールと同方針）。
+
+## recommended-tooling
+
+検出ゼロ時の推奨（手順3b で提案に使う。Java はビルドツール統合が標準）:
+
+| 用途 | 推奨 | 導入 | 最小設定 |
+|---|---|---|---|
+| formatter | Spotless + google-java-format | ビルドファイルに Spotless プラグイン追加（Gradle: `plugins` 節 / Maven: `pom.xml`）を提案して適用 | プラグインの最小設定ブロック |
+| linter（任意） | Spotless と同時に checkstyle をビルドへ統合 | 同上（ビルドツール依存。個別 install ではない） | プラグインの最小設定ブロック |
+
+> ビルドファイルへの変更はユーザー承認後に行う。設定保護フックの対象になっていれば承認扱いを明示する。

@@ -33,3 +33,13 @@
 ## architecture-guard
 
 `modules/` と `envs-*/` の分離を守衛。`envs-*/` から `vendored-modules/` への参照方向を検査（`grep` で `source =` のパス確認）。
+
+## recommended-tooling
+
+検出ゼロ時の推奨（手順3b で提案に使う。formatter は `terraform fmt` 標準のため通常 linter のみ）:
+
+| 用途 | 推奨 | 導入 | 最小設定 |
+|---|---|---|---|
+| linter | tflint | `brew install tflint` | `.tflint.hcl`（`plugin "terraform"` の enabled プリセット） |
+
+> brew でのシステム変更になるため、導入前に必ずユーザー承認を取る。

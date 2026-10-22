@@ -49,3 +49,12 @@ src/*/usecases/*.py) grep -n 'from src\.[a-z_]*\.infrastructure' "$file" 2>/dev/
 ```
 
 `src/` パスは検出したディレクトリ構造に応じて `/harness-init` が調整する。
+
+## recommended-tooling
+
+検出ゼロ時の推奨（手順3b で提案に使う）:
+
+| 用途 | 推奨 | 導入 | 最小設定 |
+|---|---|---|---|
+| formatter / linter | ruff | `uv tool install ruff`（uv 無ければ `pipx install ruff`） | `pyproject.toml` に `[tool.ruff]` 空セクション |
+| typechecker（任意） | pyright | `uv tool install pyright` | `pyrightconfig.json`（`{}` でも可） |
