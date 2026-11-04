@@ -1,6 +1,11 @@
 {
-  "baseline_ref": "988a019",
+  "baseline_ref": "4c5ac19",
   "paths": {
+    ".agent-memory/MEMORY.md": {
+      "kind": "memory",
+      "sha256": "9fefea57ab6e0d30a0975bb7c698a0cf2a273017d8a155389529427b4014efec",
+      "v2_action": "KEEP"
+    },
     ".claude/.gitignore": {
       "kind": "other",
       "sha256": "165c57ebd358f0b2cd27aaa2d6e0bbd7c92bc3ea75f1b16538203d894d74d1cb",
@@ -8,22 +13,22 @@
     },
     ".claude/_reference.md": {
       "kind": "reference",
-      "sha256": "1b62d1639985ebc165238edf0758f8f6aba2eadd8b63ee7b15683dc761b64f08",
+      "sha256": "9b6b1be22cbbc3876469b995c65e99d35464f2ae44f10f96c0a22ff5ee09df4c",
       "v2_action": "MOVE"
     },
     ".claude/agents/ci-triage.md": {
       "kind": "agent",
-      "sha256": "ae946efd052a583e8d46afdddc2eac3918a4c9282617f499668e2fe86755ad26",
+      "sha256": "d22fc5476da5d628f55b4651703ad9492f0ff2b287d2b2998f5a163845e2bd6d",
       "v2_action": "DELETE"
     },
     ".claude/agents/design-reviewer.md": {
       "kind": "agent",
-      "sha256": "53e966e79837427695bf5e76cd999f92bec44b839c2d14868ba7ff63df2dbc97",
+      "sha256": "0162f8a65023436f7ae8d24855cb0ae0eaed4cf7610793f209828abcf8ba16bc",
       "v2_action": "DELETE"
     },
     ".claude/agents/evolver.md": {
       "kind": "agent",
-      "sha256": "ad7c0c62f80a92d4bdc7abc744388d54e00ac55dc35c17acd94fe30cb2b55ce4",
+      "sha256": "e265eddac07ba769b5e901e4d53e1090c5fdbcc0f1adfb0b15ee1dbe00749926",
       "v2_action": "REWRITE"
     },
     ".claude/agents/fixer.md": {
@@ -33,7 +38,7 @@
     },
     ".claude/agents/implementer.md": {
       "kind": "agent",
-      "sha256": "ab2a0025e43d316d547c5a8f508966c12759284153fc26de59240f07ae04a428",
+      "sha256": "3f7278ecaddb3a8f5f485b4a10052e426bbae84c57ec448a44f09ea900053efc",
       "v2_action": "REWRITE"
     },
     ".claude/agents/refactorer.md": {
@@ -43,7 +48,7 @@
     },
     ".claude/agents/researcher.md": {
       "kind": "agent",
-      "sha256": "b2905398706b2251b2a16f868e3fe8dd5777b8ea771d1d4b6fda642cc9881be3",
+      "sha256": "601b5b5ec270fa4372a162ebc8a111023ad0801d589a2d1d8c1a75f75298c1b1",
       "v2_action": "DELETE"
     },
     ".claude/agents/reviewer.md": {
@@ -63,12 +68,12 @@
     },
     ".claude/rules/coding.md": {
       "kind": "rule",
-      "sha256": "577a9fb450d3f3effdec3ecdb91427cbeb8a8f1da714b1d69bb794547f2a2bc5",
+      "sha256": "e706a2f76030874d98990e235ff099ca3d390da2d0c0f0e1bd1895c1fdb81646",
       "v2_action": "REWRITE"
     },
     ".claude/rules/debugging.md": {
       "kind": "rule",
-      "sha256": "a1cda677bf00436663108b7ef35b837ec844d12ed06f06b16706f8c7e689f621",
+      "sha256": "bb8e6607240fdfe1bf6f92ce86ce944b10557934f16db5ba18dc7068e0ae49c6",
       "v2_action": "DELETE"
     },
     ".claude/rules/domain.md": {
@@ -78,117 +83,142 @@
     },
     ".claude/rules/memory.md": {
       "kind": "rule",
-      "sha256": "58e74e6d00fce27f0e9f24b497b0343dd886c45fcca25ff68f8617bba77afc53",
+      "sha256": "3fd8fb327dfdee660594cf15b27d33a5e8317a5940d3f2ca1709bfb2327a4370",
       "v2_action": "DELETE"
     },
     ".claude/rules/testing.md": {
       "kind": "rule",
-      "sha256": "54ae4d6ec068afed44c24445ab441f40c6483f1240194d5acc532568792a12d1",
+      "sha256": "000f4e6f23364077e88bd5d3eca9ea99f9fc65f9486d672e23f168fbb64ff9ba",
       "v2_action": "REWRITE"
     },
     ".claude/rules/workflow.md": {
       "kind": "rule",
-      "sha256": "f825c7f680a0f262aa824f263d973dea343e01e7d6ee38247736495b84b4d39f",
+      "sha256": "da8b384bafebb46e63a8e44c68925d20a99babfdea35a13cc5233540be068cc5",
+      "v2_action": "DELETE"
+    },
+    ".claude/scripts/doctor.sh": {
+      "kind": "script",
+      "sha256": "2c2ad105eb01dc291ab48eb73b97ab4dd31439a005e5c798ddf5464293834aeb",
       "v2_action": "DELETE"
     },
     ".claude/settings.json": {
       "kind": "hook_config",
-      "sha256": "117cdb2a55e9a2f5af57515260f8ce1a7953e1f4f412a48854cb575d5330a76e",
+      "sha256": "760e720a12c5aa2f881880b387cfb3dd8b0972d217e5f8df2249fc30ccaba06f",
       "v2_action": "REWRITE"
     },
     ".claude/skills/address-review/SKILL.md": {
       "kind": "skill",
-      "sha256": "578f078d300981d6df35156a065211aa99024a36558b66efbd7a5300a7127962",
+      "sha256": "13238bc0ea5dbe20dc45edd9ddebc63a7b009887325d6887f9fba82b1eb6f32f",
       "v2_action": "DELETE"
     },
     ".claude/skills/brainstorm/SKILL.md": {
       "kind": "skill",
-      "sha256": "c83e9139ea1284a3afce6e6f7d25cd7dbb77d7c7cb3396e883f31f2ab08b930d",
+      "sha256": "0752fa57f465293e0a8c91441263f5334c5f84a7998212ee09a5e226022eeaa1",
       "v2_action": "DELETE"
     },
     ".claude/skills/brainstorm/references/parallel-dispatch.md": {
       "kind": "reference",
-      "sha256": "11e7feddad18f630a122327ee113329c2e8674288b542b1d9e8e911d155ac75e",
+      "sha256": "3795991dfb56443b2887bd871c182753078641c0979c55175a13fa0d49b30a55",
       "v2_action": "DELETE"
     },
     ".claude/skills/create-pr/SKILL.md": {
       "kind": "skill",
-      "sha256": "a3644c4ed50d2436d7df66de0d0d0bb02ca5e6fef87d278892bd7c43f8e35269",
+      "sha256": "e41c1fb3bc8e7958e0e7d2ebaa1e40db033261b1fcc8e59d3c6c0ce56d519015",
       "v2_action": "DELETE"
     },
     ".claude/skills/create-skill/SKILL.md": {
       "kind": "skill",
-      "sha256": "bab895b06ed95b5b5b9f5b320c9d3759cc17a385552aea6b6f536ca29405861b",
+      "sha256": "dde5270ee3dffb27bf1f56c11a21018321a59bdc42713934f1b156f24abe2d7e",
       "v2_action": "DELETE"
     },
     ".claude/skills/desloppify/SKILL.md": {
       "kind": "skill",
-      "sha256": "c481221a7b7dde073ac42c0603ba44d9b59c0868f4c70e960ab6974fc7a11902",
-      "v2_action": "DELETE"
-    },
-    ".claude/skills/doctor/SKILL.md": {
-      "kind": "skill",
-      "sha256": "e24a9191a5cdb9ee58d474388927df466b0e908129a3a224ed7ff28b7ab514e4",
+      "sha256": "1ef2416ec8e4d01c5fd6a9ae6c1e9bae0caa1a3ca38fc6e41f387597cfdd7eae",
       "v2_action": "DELETE"
     },
     ".claude/skills/evolve-rules/SKILL.md": {
       "kind": "skill",
-      "sha256": "1804a4c4e9f2784ee3a0d5e93dcba865947e0c8122c660112012bf8b5cb93739",
+      "sha256": "90b165e2cd1a895f9b7a33b5c27246ac6224eed9d2cafb78a5cc50c648fb13a7",
       "v2_action": "DELETE"
     },
     ".claude/skills/evolve-rules/references/ahe-principles.md": {
       "kind": "reference",
-      "sha256": "2a757c10b6e1e1a74f93d5f37ffd09d3827db6957d6b9bd5046e132f4888b3c3",
+      "sha256": "63203007e3b9db55d80fad3f007f6c8c2fb88cfde1393777c9ea129475abbfe3",
       "v2_action": "MOVE"
     },
     ".claude/skills/harness-init/SKILL.md": {
       "kind": "skill",
-      "sha256": "45bea007cc4625cb50ab10538e6aa4b8c5d30a3a0b0d960031c83e01bfb5c39e",
+      "sha256": "34a77f3dc116db4f159d150cec897ae3d66829eeca8f4cb15ca47fc36c6d2ef4",
       "v2_action": "REWRITE"
     },
     ".claude/skills/harness-init/languages/_generic.md": {
       "kind": "reference",
-      "sha256": "c878c73ca5f96505b850625e9e24f5059f97c210a5b4599ee05c98fe0eb10fa9",
+      "sha256": "1dcb7a0b23b53577642c841a2beccea402d8183e81ceb085ef6afbd88b6e3c33",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/languages/c-cpp.md": {
+      "kind": "reference",
+      "sha256": "1498fa47a711bd73f0f3df91dc385a91ab523c7f4b464006fd11f2a18c27d225",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/languages/csharp.md": {
+      "kind": "reference",
+      "sha256": "ed3a959ed5012604f3098d229a74983af38046253cb231ee242e4055eb9270b5",
       "v2_action": "MOVE"
     },
     ".claude/skills/harness-init/languages/go.md": {
       "kind": "reference",
-      "sha256": "9e4e35ebe5ef387363316795f361bfa188bc4cca899c33a523e7fc062b87ea71",
+      "sha256": "933802642446c9ef2db16e59050cf51355c36164e7134f983ddc01c663874ab2",
       "v2_action": "MOVE"
     },
     ".claude/skills/harness-init/languages/java.md": {
       "kind": "reference",
-      "sha256": "da12de295b3b3bf94e89ff55ba4b6fa2f847edbb69db3a446bce045d0a67d8e5",
+      "sha256": "18ace5f93365b39849a500045794680a381291520089888b78103933a7221361",
       "v2_action": "MOVE"
     },
     ".claude/skills/harness-init/languages/node.md": {
       "kind": "reference",
-      "sha256": "88295d82d504aa1679fbae086462e12f73f38f67d07ad39cb4a9464fb007f1c5",
+      "sha256": "4cedae6822f50a77882e6008e9220f43f2a57edcc86a4dcc43d74af65f331bcf",
       "v2_action": "MOVE"
     },
     ".claude/skills/harness-init/languages/python.md": {
       "kind": "reference",
-      "sha256": "58559abc0bc724c17ad35e4b032ab818a55558bce21fefa4993f10ed7b6f6cc0",
+      "sha256": "512c08e4bbbb5f0bce0259a65978f13cdd4314fa52e4d07e4f7ed75bd8acfc94",
       "v2_action": "MOVE"
     },
     ".claude/skills/harness-init/languages/rust.md": {
       "kind": "reference",
-      "sha256": "1ed9570bda98c6581dfca1128d0c3de1322e0f12a2e1359dcdda30307ccd0844",
+      "sha256": "68a19ff88856970884f246a15d8a96e1a02c1e47fcf5a1b2901289ebdf7c1475",
       "v2_action": "MOVE"
     },
     ".claude/skills/harness-init/languages/terraform.md": {
       "kind": "reference",
-      "sha256": "93f2bc489e44055b5a0a1b4a12e425ff49bcb3fd41397f4e7cff24a68cdb97c2",
+      "sha256": "c2d442c08610582ce7ab37ea9076c78c2e248290dfda2fc48166e6476871d3ed",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/memory-backends/common.md": {
+      "kind": "reference",
+      "sha256": "765b6948519a9a7f1ca4d2b9f42035ceb6923bf202fb6162c27950367711dcfc",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/memory-backends/engram.md": {
+      "kind": "reference",
+      "sha256": "920809254da1d3c2d5c19d3208bc682dcfccd2a968403dd80a79602168e045df",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/memory-backends/file.md": {
+      "kind": "reference",
+      "sha256": "39ea564b8ec5f2d03aafe2938553700e0ad280df023a5409622beca35898c932",
       "v2_action": "MOVE"
     },
     ".claude/skills/harness-init/shared/hooks-boilerplate.md": {
       "kind": "reference",
-      "sha256": "40eaff901e8be065fe7e0b396a6bc855755d2c741844ef24e39cb71c3e88d185",
+      "sha256": "7db61288df8bee7133cfedd7e66e5be935474e6729685a0c46fccd199d43127d",
       "v2_action": "MOVE"
     },
     ".claude/skills/harness-init/shared/rules-skeleton.md": {
       "kind": "reference",
-      "sha256": "0a386184af0d86b79911e7b786e3a59372420a43456a2f56e27353eb7b96b921",
+      "sha256": "3c3bfdc0ea984291ca7de569de8adbc79f29ecffb82f7994b245afa97cfa344c",
       "v2_action": "MOVE"
     },
     ".claude/skills/harness-init/task-runners/_generic.md": {
@@ -221,29 +251,34 @@
       "sha256": "90bd27f9a994d2dda1542da0f78c7fe1c626969a3bdefc707cc701ce9b9ad1f9",
       "v2_action": "MOVE"
     },
+    ".claude/skills/harness-sync/SKILL.md": {
+      "kind": "skill",
+      "sha256": "2860b8eb416b161ae435342eff8a92a7fa7295c8d1e24575499abf9e472d303a",
+      "v2_action": "DELETE"
+    },
     ".claude/skills/save-session/SKILL.md": {
       "kind": "skill",
-      "sha256": "7196019e256169a6e5f40f91e07e7dd5d87bfc27ff93a77982d2dc91694dd807",
+      "sha256": "ee5576958c38bc9303f4c8686f5832195c37810774b87ce9bf848001d20e1b4b",
       "v2_action": "DELETE"
     },
     ".claude/skills/self-review/SKILL.md": {
       "kind": "skill",
-      "sha256": "dc20844500d7a53902c5016cc0ca405348295f9b3fda203a0ca2e967c40f89b5",
+      "sha256": "f5bd51bcd18fb03e71b35bf5d485f87dbd74f6b1b646877541f406e82561a1e2",
       "v2_action": "DELETE"
     },
     ".github/pull_request_template.md": {
       "kind": "template",
-      "sha256": "49510ab010ba480751ef3cb55cf50ec164718502f29d71c42d416b58bd457d58",
+      "sha256": "f8e43780c16409b5f3f4aa3c8453c6abf3032f33ae2ed2bc6f422e0991ee0ed0",
       "v2_action": "KEEP"
     },
     "AGENTS.md": {
       "kind": "instructions",
-      "sha256": "dd9813b86e9608394f236c0e00ef6aaca491a62641ef45faa5c4b2dff681e2d0",
+      "sha256": "5883f54d36ff1371c544780bf8b4b1e3ae41c57d552fb78feb84e0572046ff22",
       "v2_action": "REWRITE"
     },
     "CLAUDE.md": {
       "kind": "instructions",
-      "sha256": "dcd3ca3cdcef84bda77a33c0e7d65e3c807be344e1d825ef3e13edd53ce6650a",
+      "sha256": "5f1a2fa0eea596cadd79ea96c2295abb479d58927d1214b00ad9fdc4fe939a2e",
       "v2_action": "REWRITE"
     }
   },

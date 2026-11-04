@@ -48,7 +48,7 @@
 - P0 最初の wave で `pyproject.toml` と最小スモークテスト（`seh --help`）を作り、以降の barrier で `CI_CHECK_CMD` が成立する状態にする。
 
 ### D3. 移行方式（同一リポで段階移行）
-- P0 で `988a019`（v1 最終コミット）に `v1-baseline` タグを打ち、push する。「Git clean」判定から未追跡の `.agents/` は除外する。
+- P0 で `4c5ac19`（origin/main 上の v1 最終コミット。当初 988a019 としていたが、リモートに未取得の v1 コミット3件があったため訂正）に `v1-baseline` タグを打ち、push する。「Git clean」判定から未追跡の `.agents/` は除外する。
 - P0〜P7 の間、v1 の `.claude/`（skills / agents / rules / settings.json）はリポジトリ実体として**変更しない**。P5 の Skill/Agent/Rule 縮約は `src/seh/templates/`（および `.harness/spec/` の正本テンプレート）側だけで行う。
 - リポジトリ実体の v1 資産の削除・置換は **P8 の dogfooding apply（ユーザー実行、D13）に限る**。
 - P0〜P7 はリポジトリ直下に `.harness/` を作らない。正本テンプレートは `src/seh/templates/spec/` に置く。Authoring Gate（CLI・`authoring-gate.yml`）は `.harness/config.toml` が無いリポジトリでは no-op（`NOT_CONFIGURED` を出力して exit 0）。
@@ -90,8 +90,10 @@
 
 ### D9. 設計書に無いローカル資産
 - `desloppify` スキル: 削除（P8 最終 wave）。`.gitignore` の `.desloppify/` 行も削除。
-- `doctor` スキル: `seh doctor` に置換して削除（P8）。
-- `harness-sync` スキル / `.claude/scripts/doctor.sh`: ローカルに存在しないため移行対象外（`seh sync` / `seh doctor` は新規実装）。
+- `doctor` スキルは v1 最終版（4c5ac19）で既に削除済み。`.claude/scripts/doctor.sh` を `seh doctor` に置換して削除（P8）。
+- `harness-sync` スキル（4c5ac19 で追加）: `seh sync --hosts` に置換して削除（P8）。
+- `.claude/skills/harness-init/memory-backends/`（file / engram 選択）: 知見を `providers/memory/` へ移し削除（P8）。
+- `.agent-memory/`（v1 の file 記憶バックエンド、コミット共有）: **KEEP**（ユーザーデータ）。v2 の `memory.provider = "file"` は既定の保存先を `.agent-memory/` とし、v1 の記憶形式（`<type>_<slug>.md` + `MEMORY.md` 索引 + `metadata.evolve`）を読み書きできること（FR-040: 既存知識を消さない）。
 - `.agents/`（未追跡・`skills → ../.claude/skills` シンボリックリンク）: P8 の dogfooding で **seh 管理の4ホスト生成物に置換**する（D12 の承認付き置換経路・snapshot あり）。P0〜P7 は触らない。
 
 ### D10. 外部ツール

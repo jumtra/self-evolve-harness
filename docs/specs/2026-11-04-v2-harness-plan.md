@@ -52,7 +52,7 @@ contracts/*  schemas/*          （stdlib と jsonschema 以外に依存しな�
 | T03 | 決定記録（researcher が調査し、オーケストレータが記述）。4ホストの生成形式と CLI フラグ（`--help` 実測 + 公式資料）、OpenCode の Claude 互換パス無効化、Codex / AGY / OpenCode の Hook 手段、AGY の Subagent 形式、Graphify の正式リポジトリと CLI 契約 | `docs/decisions/0001-host-formats.md`, `0002-cli-runner-flags.md`, `0003-hook-mapping.md`, `0004-graphify.md`, `0005-opencode-discovery.md` | なし（文書） | 1 | なし |
 | T04 | Eval / Prompt-Skill fixture。E01〜E10（D6 を適用）、A01〜A08 の入力、TRIGGER± / BOUNDARY / OUTPUT / TOOL / REGRESSION / SECURITY / CONTEXT、悪意ある文書（`.fixture` サフィックス、D16） | `tests/fixtures/eval/**`, `tests/fixtures/prompt_skill/**`, `tests/fixtures/security/**`, `docs/evals.md` | なし（データ）。T25 で「ダミー実装なら FAIL」を検証 | 1 | なし |
 
-W1 の barrier 後、オーケストレータが `git tag v1-baseline 988a019` と push を行う。
+W1 の barrier 後、オーケストレータが `git tag v1-baseline 4c5ac19` と push を行う（v1 最終コミット。リモート取得後に訂正）。
 
 ### P1: コア・契約・CLI 基盤（W2〜W4）
 
@@ -60,11 +60,11 @@ W1 の barrier 後、オーケストレータが `git tag v1-baseline 988a019` �
 |---|---|---|---|---|---|
 | T05 | **全契約**。dataclass / StrEnum / Protocol と JSON Schema。対象は TaskSpec、WorkUnit、Edge、Verdict、UnitState（10状態と許可遷移表）、Result（OK / NOT_FOUND / UNSUPPORTED / ERROR）、Evidence、RunContext、RunResult、TerminalState、CanonicalSpec、HostCapability（NATIVE / ADAPTED / CI_ONLY / UNSUPPORTED / UNVERIFIED）、GeneratedPlan、DiscoveryReport、ModuleManifest、Module Protocol、AuthoringRecord（状態と遷移）、ApprovalToken、PlannedChange | `src/seh/contracts/**`, `src/seh/schemas/**`, `tests/**/contracts/` | U（Schema の正常・異常、不正遷移の拒否） | 2 | T01 |
 | T06 | subprocess 安全層。argv 配列、cwd / env allowlist（`CLAUDECODE` 系を除外）、stdin 渡し、stdout / stderr の分離と上限、タイムアウト、プロセスグループ kill、キャンセル | `src/seh/runtime/__init__.py`, `src/seh/runtime/process.py`, `tests/**/process/` | U / I（`sleep`・`yes` で残存プロセス 0 を確認、CLI-007） | 2 | T01 |
-| T07 | 秘匿（redaction）と trace。秘密値のマスク、JSONL trace（run / task / node ID と evidence digest）、artifact 保存と参照 URI | `src/seh/redaction.py`, `src/seh/trace.py`, `src/seh/artifacts.py`, `tests/**/trace/` | U（ダミー秘密値は文字列連結で組む。T08 / FR-049 / FR-050） | 2 | T01 |
+| T07 | 秘匿（redaction）と trace。秘密値のマスク、JSONL trace（run / task / node ID と evidence digest）（artifact 保存は T13 へ移管） | `src/seh/redaction.py`, `src/seh/trace.py`, `tests/**/trace/` | U（ダミー秘密値は文字列連結で組む。T08 / FR-049 / FR-050） | 2 | T01 |
 | T08 | Config。`.harness/config.toml` の読込、Schema、既定値、Minimal / Balanced / Full、`config show` と `config set --plan` | `src/seh/config.py`, `src/seh/commands/config.py`, `tests/**/config/` | U（不正な key / 型 / 値の拒否、`auto_low_risk` は受理するが適用しない） | 3 | T05 |
 | T09 | Module Registry。manifest のパース、依存と競合の解決、Capability 台帳、`module list` と `module enable --plan`、標準 manifest | `src/seh/registry.py`, `src/seh/modules/**`, `src/seh/commands/module.py`, `tests/**/registry/` | U（循環、重複 Provider、API 不一致、manifest 読込時にコードを実行しない） | 3 | T05 |
 | T10 | Policy。R0 / R1 / R2 分類、tool / command allowlist、承認トークン（scope・有効期限・対象 digest に紐づく、`--yes` では R2 不可） | `src/seh/policy.py`, `tests/**/policy/` | U（NFR-001 の負例10件、T12） | 3 | T05 |
-| T13 | AgentRunner 基盤。`CliAgentRunner` Protocol、Vendor Adapter の基底（`build_argv` / `parse_event` / `detect_terminal_status` / `normalize_usage`）、`cli_capability` probe、テスト用 FakeCliRunner | `src/seh/runtime/agent_runner.py`, `src/seh/runtime/runners/__init__.py`, `src/seh/runtime/runners/base.py`, `src/seh/runtime/cli_capability.py`, `src/seh/runtime/runners/fake.py`, `tests/**/runner_base/` | U（usage 欠損は UNKNOWN、CLI-011） | 3 | T05, T06 |
+| T13 | AgentRunner 基盤。`CliAgentRunner` Protocol、Vendor Adapter の基底（`build_argv` / `parse_event` / `detect_terminal_status` / `normalize_usage`）、`cli_capability` probe、テスト用 FakeCliRunner | `src/seh/runtime/agent_runner.py`, `src/seh/runtime/runners/__init__.py`, `src/seh/runtime/runners/base.py`, `src/seh/runtime/cli_capability.py`, `src/seh/runtime/runners/fake.py`, `src/seh/artifacts.py`（T07 から移管: Evidence 型が T05 依存のため）, `tests/**/runner_base/` | U（usage 欠損は UNKNOWN、CLI-011） | 3 | T05, T06 |
 | T11 | Hook イベント。stdin JSON を完全にパースし、D11 の fail-closed / fail-open を実装。v1 の安全フックを Python へ移植（破壊コマンド、機密 / 設定保護、commit 前の秘密スキャン）。Hook シム（`seh` 不在時は警告して通過） | `src/seh/events.py`, `src/seh/commands/hook.py`, `src/seh/templates/hooks/**`, `tests/**/events/` | U / I（malformed → exit 2、未知イベント、シム） | 4 | T07, T10 |
 | T12 | `seh doctor` 基盤。check モジュール列挙型の構成、config / 参照 / module 状態 / バージョン不一致（D8）、`--context`（NFR-011）、`--format json` | `src/seh/doctor/**`, `src/seh/commands/doctor.py`, `tests/**/doctor/` | U / I（オフラインで動く、FR-052） | 4 | T08, T09, T07 |
 | T14 | Ownership。hash manifest、三者差分、atomic write、transaction / snapshot / restore、symlink の realpath 判定 | `src/seh/ownership.py`, `tests/**/ownership/` | U / I（途中 kill 後の復旧、NFR-004 / T09） | 4 | T05 |
@@ -153,7 +153,7 @@ W1 の barrier 後、オーケストレータが `git tag v1-baseline 988a019` �
 ### wave 内の独立性（同一 wave 内で所有ファイルが互いに素であることの根拠）
 
 - **W1**: 書く場所がタスクごとに分かれています。T01 はコードと CI、T02 は `docs/v1-inventory.md` と `docs/baseline`、T03 は `docs/decisions`、T04 は `tests/fixtures`。T02 の `src/seh/migration/v1_known_paths.json` は T01 の所有外です。
-- **W2**: T05 は `contracts/` と `schemas/`、T06 は `runtime/process.py`、T07 は `redaction.py`・`trace.py`・`artifacts.py`。重なりはありません。
+- **W2**: T05 は `contracts/` と `schemas/`、T06 は `runtime/process.py`、T07 は `redaction.py`・`trace.py`。重なりはありません（`artifacts.py` は Evidence 型に依存するため W3 の T13 へ移管）。
 - **W3**: T08（config）、T09（registry）、T10（policy）、T13（runner 基盤）は、どれも別ファイルとテストディレクトリです。T13 の `runtime/runners/__init__.py` は T13 だけが作ります。
 - **W4**: T11（events・hook）、T12（doctor）、T14（ownership）、T15（init/detect）。`init/__init__.py` は T15 が所有し、T21 は後続の wave です。
 - **W5**: 4ホストがそれぞれ別ファイルです。`providers/__init__.py` と `providers/hosts/__init__.py` は T16 だけが所有します。
