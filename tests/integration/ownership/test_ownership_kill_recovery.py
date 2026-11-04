@@ -1,0 +1,41 @@
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+from seh.ownership import recover_incomplete
+
+SRC = str(Path(__file__).resolve().parents[3] / "src")
+
+
+def test_recover_incomplete_after_process_killed_mid_transaction(tmp_path: Path) -> None:
+    (tmp_path / "mod.txt").write_bytes(b"orig")
+    (tmp_path / "gone.txt").write_bytes(b"keep me")
+    (tmp_path / "link").symlink_to("target-a")
+    script = (
+        "import os, sys\n"
+        "from pathlib import Path\n"
+        "from seh.ownership import Transaction\n"
+        "tx = Transaction(Path(sys.argv[1]))\n"
+        "tx.__enter__()\n"
+        "tx.write('mod.txt', b'changed')\n"
+        "tx.write('deep/new.txt', b'n')\n"
+        "tx.delete('gone.txt')\n"
+        "tx.replace_symlink('link', 'other')\n"
+        "os._exit(1)\n"
+    )
+    env = {**os.environ, "PYTHONPATH": SRC}
+
+    proc = subprocess.run(
+        [sys.executable, "-c", script, str(tmp_path)], env=env, capture_output=True
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert (tmp_path / "mod.txt").read_bytes() == b"changed"
+
+    recovered = recover_incomplete(tmp_path)
+
+    assert len(recovered) == 1
+    assert (tmp_path / "mod.txt").read_bytes() == b"orig"
+    assert (tmp_path / "gone.txt").read_bytes() == b"keep me"
+    assert os.readlink(tmp_path / "link") == "target-a"
+    assert not (tmp_path / "deep").exists()
