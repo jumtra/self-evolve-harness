@@ -98,7 +98,7 @@ def test_failure_midway_restores_every_file(tmp_path: Path, monkeypatch) -> None
     plan = plan_migration(tmp_path)
     real_delete = apply_module.Transaction.delete
 
-    def failing_delete(self, path: str) -> None:  # noqa: ANN001
+    def failing_delete(self: apply_module.Transaction, path: str) -> None:
         if path.endswith("b.md"):
             raise OSError("disk error")
         real_delete(self, path)

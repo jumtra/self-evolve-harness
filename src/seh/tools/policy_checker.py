@@ -5,11 +5,17 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from seh.policy import classify_paths, is_protected_path
-from seh.tools.registry import PATH_KEYWORD, ToolContext, ToolSpec
+from seh.tools.registry import PATH_KEYWORD, ToolContext, ToolError, ToolSpec
+
+
+def _str_list(value: object) -> list[str]:
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        raise ToolError("INVALID_INPUT", "expected a list of strings")
+    return list(value)
 
 
 async def _classify(args: Mapping[str, object], ctx: ToolContext) -> Mapping[str, object]:
-    paths = [str(p) for p in args["paths"]]  # type: ignore[attr-defined]
+    paths = _str_list(args["paths"])
     return {
         "risk": str(classify_paths(paths)),
         "protected": [p for p in paths if is_protected_path(p)],

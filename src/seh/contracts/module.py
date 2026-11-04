@@ -23,8 +23,6 @@ class InstallContext:
 
 
 _REQUIRED_KEYS = ("id", "api_version", "version", "provides")
-_TUPLE_KEYS = ("provides", "requires", "conflicts", "permissions", "platforms")
-_BOOL_KEYS = ("default_enabled", "opt_in", "network_access")
 
 
 @dataclass(frozen=True)
@@ -52,21 +50,34 @@ class ModuleManifest:
         if health_key not in data:
             raise ValueError("manifest missing required key: health_command")
 
-        values: dict[str, object] = {}
-        for key in ("id", "api_version", "version"):
-            value = data[key]
-            if not isinstance(value, str) or not value:
-                raise ValueError(f"manifest key {key} must be a non-empty string")
-            values[key] = value
-        for key in _TUPLE_KEYS:
-            values[key] = _str_tuple(key, data.get(key, ()))
-        values["health_command"] = _str_tuple(health_key, data[health_key])
-        for key in _BOOL_KEYS:
-            value = data.get(key, False)
-            if not isinstance(value, bool):
-                raise ValueError(f"manifest key {key} must be a boolean")
-            values[key] = value
-        return cls(**values)  # type: ignore[arg-type]
+        return cls(
+            id=_non_empty_str(data, "id"),
+            api_version=_non_empty_str(data, "api_version"),
+            version=_non_empty_str(data, "version"),
+            provides=_str_tuple("provides", data.get("provides", ())),
+            requires=_str_tuple("requires", data.get("requires", ())),
+            conflicts=_str_tuple("conflicts", data.get("conflicts", ())),
+            permissions=_str_tuple("permissions", data.get("permissions", ())),
+            platforms=_str_tuple("platforms", data.get("platforms", ())),
+            default_enabled=_bool(data, "default_enabled"),
+            opt_in=_bool(data, "opt_in"),
+            network_access=_bool(data, "network_access"),
+            health_command=_str_tuple(health_key, data[health_key]),
+        )
+
+
+def _non_empty_str(data: Mapping[str, object], key: str) -> str:
+    value = data[key]
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"manifest key {key} must be a non-empty string")
+    return value
+
+
+def _bool(data: Mapping[str, object], key: str) -> bool:
+    value = data.get(key, False)
+    if not isinstance(value, bool):
+        raise ValueError(f"manifest key {key} must be a boolean")
+    return value
 
 
 def _str_tuple(key: str, value: object) -> tuple[str, ...]:

@@ -18,7 +18,10 @@ def _tail(data: bytes) -> str:
 
 
 async def _run(args: Mapping[str, object], ctx: ToolContext) -> Mapping[str, object]:
-    argv = [str(a) for a in args["argv"]]  # type: ignore[attr-defined]
+    raw_argv = args["argv"]
+    if not isinstance(raw_argv, list) or not all(isinstance(a, str) for a in raw_argv):
+        raise ToolError("INVALID_INPUT", "argv must be a list of strings")
+    argv: list[str] = list(raw_argv)
     decision = ctx.policy.authorize_command(argv)
     if not decision.allowed:
         raise ToolError("NOT_AUTHORIZED", decision.message)

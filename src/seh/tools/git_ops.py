@@ -27,6 +27,12 @@ async def _git_lines(args: list[str], ctx: ToolContext) -> list[str]:
     return [line for line in result.stdout.decode(errors="replace").splitlines() if line]
 
 
+def _str_list(value: object) -> list[str]:
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        raise ToolError("INVALID_INPUT", "expected a list of strings")
+    return list(value)
+
+
 async def _diff_names(args: Mapping[str, object], ctx: ToolContext) -> Mapping[str, object]:
     base = str(args["base"])
     changed = await _git_lines(["diff", "--name-only", base, "--"], ctx)
@@ -36,8 +42,8 @@ async def _diff_names(args: Mapping[str, object], ctx: ToolContext) -> Mapping[s
 
 async def _scope_check(args: Mapping[str, object], ctx: ToolContext) -> Mapping[str, object]:
     names = await _diff_names(args, ctx)
-    allowlist = [str(g) for g in args["allowlist"]]  # type: ignore[attr-defined]
-    touched = [*names["changed"], *names["untracked"]]  # type: ignore[misc]
+    allowlist = _str_list(args["allowlist"])
+    touched = [*_str_list(names["changed"]), *_str_list(names["untracked"])]
     outside = list(outside_allowlist(touched, allowlist))
     return {"ok": not outside, "outside": outside}
 

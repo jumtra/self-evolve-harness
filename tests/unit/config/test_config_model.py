@@ -1,3 +1,4 @@
+import dataclasses
 from pathlib import Path
 
 import pytest
@@ -314,6 +315,7 @@ def test_config_diff_is_empty_for_equal_configs() -> None:
 
 def test_config_is_frozen() -> None:
     cfg: Config = defaults()
+    field_name = "profile"  # 定数属性名だと ruff B010 が代入へ書き換えて型エラーになる
 
-    with pytest.raises(AttributeError):
-        cfg.profile = "full"  # type: ignore[misc]
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        setattr(cfg, field_name, "full")
