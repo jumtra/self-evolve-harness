@@ -136,7 +136,7 @@
 - `seh migrate rollback` で v1 状態に戻せることをテスト（一時 clone 上）で確認する。
 
 ### D14. 参照監査の除外パス
-`docs/design/`、`docs/specs/`、`docs/decisions/`、`docs/v1-inventory.md`、`docs/migration-v1-to-v2.md`、`CHANGELOG.md`（リリースノート）、`src/seh/migration/`（v1 既知パス一覧）、`tests/fixtures/`（v1 サンプル）、`.harness/backups/`、git 履歴。それ以外での削除済み Skill/Agent/Rule 名の参照を 0 にする。
+`docs/design/`、`docs/specs/`、`docs/decisions/`、`docs/v1-inventory.md`、`docs/baseline/`、`.agent-memory/`、`docs/migration-v1-to-v2.md`、`CHANGELOG.md`（リリースノート）、`src/seh/migration/`（v1 既知パス一覧）、`tests/fixtures/`（v1 サンプル）、`.harness/backups/`、git 履歴。それ以外での削除済み Skill/Agent/Rule 名の参照を 0 にする。
 
 ### D14a. P8 後の v1 残骸
 - `.claude/.gitignore`: REWRITE（v2 生成物として `harness-log` 系・`worktrees/`・`settings.local.json` を除外）。
@@ -190,3 +190,7 @@
 - **dogfooding apply で v1 実体と競合**: D12 の承認付き置換。承認はユーザーの対話 apply（D13 停止点）で行う。snapshot から rollback 可能。
 - **Authoring Gate が自分自身の生成物をブロック**: 初回導入は Authoring Gate 対象外（D13）。導入後の `/work` Authoring Eval が実 CLI 上限内で回せなければ `BLOCKED_NO_EVAL` / `NOT_RUN` を記録し、Gate を暗黙 skip しない（完了報告で明示）。
 - **CI が5回のループで通らない／同一エラー2回**: `workflow.md` どおり fixer へ委譲、3ストライク超過でエスカレーション。
+
+### D19. 承認方式（実装中に確定）
+- 承認が必要な適用（R2 / 保護パス / USER_OWNED_CONFLICT の置換 / migrate apply）は、**対話モード（stdin が TTY）の確認プロンプトで y の場合のみ**実行する。非対話では拒否して対話での再実行を案内する。
+- 承認トークン発行 CLI は v2.0 では提供しない（`ApprovalToken` 契約と `Policy.authorize` の検証ロジックは将来のために維持）。

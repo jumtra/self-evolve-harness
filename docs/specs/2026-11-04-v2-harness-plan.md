@@ -192,3 +192,12 @@ W1 の barrier 後、オーケストレータが `git tag v1-baseline 4c5ac19` �
 - **AGY・Codex の Hook 仕様を確認できない**: `CI_ONLY` / `UNVERIFIED` に倒し、FULL と表示しません。
 - **dogfooding apply でセッションが壊れる**（fail-closed の Hook が誤作動するなど）: snapshot、`seh migrate rollback`、`git checkout v1-baseline -- …` の3段の復旧手順を T67 で提示します。
 - **pyright strict 寄りの設定で async / Protocol の型エラーが続出する**: T01 で `typeCheckingMode = "standard"` に確定し、以後変更しません。
+
+## 実行中の計画変更記録
+
+| 日時 | 変更 | 理由 |
+|---|---|---|
+| W2 | `src/seh/artifacts.py` を T07 → T13（W3）へ移管 | Evidence 型が同 wave の T05 に依存するため |
+| W5 前 | `providers/__init__.py`・`providers/hosts/__init__.py`・`providers/hosts/common.py` をオーケストレータが先行作成（b32089c） | Codex/AGY/OpenCode が共有する `.agents/skills`・`AGENTS.md` 生成を1箇所に置き、W5 の4並列を可能にするため |
+| W6 前 | T21（`seh init`）を W6 → W7 へ移動。正本 spec ローダー `src/seh/spec_loader.py` を T23 の所有に追加 | init は spec ローダーと sync 計画に依存し、それらは W6 の T23 が作るため |
+| W6 前 | v2.0 の承認方式を「対話モードの確認プロンプトのみ」に確定。非対話で承認が必要な適用（R2・既存ファイル置換）は拒否し対話実行を案内する。承認トークン発行 CLI は v2.0 では作らない（契約 `ApprovalToken` と Policy の検証は残す） | AI による承認の自己発行を構造的に不可能にしつつ、要件 02 §10（`--yes` だけで危険操作を許可しない）を満たす最小構成 |
