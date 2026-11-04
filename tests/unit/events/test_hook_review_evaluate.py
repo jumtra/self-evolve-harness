@@ -143,3 +143,37 @@ def test_attended_run_keeps_ask(tmp_path: Path) -> None:
 
     assert code == 0
     assert json.loads(stdout)["hookSpecificOutput"]["permissionDecision"] == "ask"
+
+
+def test_apply_patch_paths_are_extracted_and_protected(tmp_path: Path) -> None:
+    patch_text = (
+        "*** Begin Patch\n"
+        "*** Update File: .harness/policy/rules.yaml\n"
+        "@@\n-old\n+new\n*** End Patch"
+    )
+    payload = json.dumps(
+        {"tool_name": "apply_patch", "tool_input": {"command": patch_text}, "cwd": str(tmp_path)}
+    ).encode()
+    code, _, stderr = run_hook(
+        "PreToolUse", HostId.CODEX, payload, policy=Policy(), trace=None, unattended=False
+    )
+    assert code == 2
+    assert "承認が必要" in stderr
+
+
+def test_antigravity_write_to_file_blocks_unplanned_authoring(tmp_path: Path) -> None:
+    (tmp_path / ".harness").mkdir()
+    payload = json.dumps(
+        {
+            "workspacePaths": [str(tmp_path)],
+            "toolCall": {
+                "name": "write_to_file",
+                "args": {"TargetFile": ".claude/skills/demo/SKILL.md"},
+            },
+        }
+    ).encode()
+    code, stdout, _ = run_hook(
+        "PreToolUse", HostId.ANTIGRAVITY, payload, policy=Policy(), trace=None, unattended=False
+    )
+    assert code == 0
+    assert json.loads(stdout)["decision"] == "deny"

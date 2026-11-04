@@ -18,6 +18,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import cast
 
+from seh.authoring.lifecycle import native_stop, write_is_authorized, write_requires_plan
 from seh.contracts import HostId
 from seh.policy import (
     Action,
@@ -35,7 +36,23 @@ from seh.trace import TraceWriter
 KNOWN_EVENTS = frozenset({"PreToolUse", "PostToolUse", "SessionStart", "Stop"})
 
 _GIT_DIFF_TIMEOUT_SECONDS = 10
-_COMMAND_KEYS = ("command", "cmd", "script")
+_COMMAND_KEYS = ("command", "cmd", "script", "CommandLine")
+_PATCH_PATH = re.compile(r"^\*\*\* (?:(?:Add|Update|Delete) File|Move to): (.+)$", re.MULTILINE)
+_WRITE_TOOLS = frozenset(
+    {
+        "write",
+        "edit",
+        "multiedit",
+        "notebookedit",
+        "write_file",
+        "edit_file",
+        "write_to_file",
+        "replace_file_content",
+        "multi_replace_file_content",
+        "apply_patch",
+        "patch",
+    }
+)
 _FORK_BOMB = re.compile(r":\(\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:")
 _ROOT_TARGETS = frozenset(
     {"/", "//", "/.", "/*", "~", "~/", "~/*", "$HOME", "$HOME/", "$HOME/*", "${HOME}"}
@@ -97,12 +114,19 @@ def _as_dict(value: object, what: str) -> Mapping[str, object]:
 def _walk_paths(value: object, under_path_key: bool, found: list[str]) -> None:
     if isinstance(value, dict):
         for key, child in cast("Mapping[object, object]", value).items():
-            _walk_paths(child, isinstance(key, str) and "path" in key.lower(), found)
+            _walk_paths(
+                child,
+                isinstance(key, str) and ("path" in key.lower() or key.lower() == "targetfile"),
+                found,
+            )
     elif isinstance(value, list):
         for child in cast("list[object]", value):
             _walk_paths(child, under_path_key, found)
-    elif isinstance(value, str) and under_path_key and value:
-        found.append(value)
+    elif isinstance(value, str):
+        if "*** Begin Patch" in value:
+            found.extend(m.strip() for m in _PATCH_PATH.findall(value) if m.strip())
+        elif under_path_key and value:
+            found.append(value)
 
 
 def _collect_paths(args: Mapping[str, object]) -> tuple[str, ...]:
@@ -120,6 +144,8 @@ def _find_command(args: Mapping[str, object]) -> str | None:
     for key in _COMMAND_KEYS:
         value = _as_str(args.get(key), key)
         if value is not None:
+            if value.lstrip().startswith("*** Begin Patch"):
+                return None
             return value
     return None
 
@@ -172,7 +198,9 @@ def _antigravity_fields(
     tool = _as_str(call_dict.get("name"), "toolCall.name")
     if tool is None or cwd is None:
         raise MalformedHookInput("toolCall.name and workspacePaths[0] are required")
-    return tool, _as_dict(call_dict.get("args"), "toolCall.args"), cwd
+    args = _as_dict(call_dict.get("args"), "toolCall.args")
+    command_cwd = _as_str(args.get("Cwd"), "toolCall.args.Cwd")
+    return tool, args, command_cwd or cwd
 
 
 def _is_catastrophic(command: str) -> bool:
@@ -327,7 +355,20 @@ def evaluate(inp: HookInput, *, policy: Policy) -> HookOutcome:
         if command_outcome.decision != HookDecision.ALLOW:
             return command_outcome
     if inp.paths:
-        return _evaluate_paths(inp)
+        outcome = _evaluate_paths(inp)
+        if outcome.decision != HookDecision.ALLOW:
+            return outcome
+        if (
+            (inp.cwd / ".harness").is_dir()
+            and (inp.tool or "").lower() in _WRITE_TOOLS
+            and write_requires_plan(inp.cwd, inp.paths)
+            and not write_is_authorized(inp.cwd, inp.paths)
+        ):
+            return HookOutcome(
+                HookDecision.DENY,
+                "AUTHORING_PLAN_REQUIRED",
+                "先に seh author で計画と評価を行ってください",
+            )
     return _ALLOW
 
 
@@ -398,6 +439,20 @@ def run_hook(
         if event == "SessionStart":
             outputs = [out for h in SESSION_START_HANDLERS if (out := h(inp))]
             return 0, "\n".join(outputs), ""
+        if event == "Stop" and (inp.cwd / ".harness").is_dir():
+            session = inp.raw.get("session_id")
+            status = native_stop(inp.cwd, session if isinstance(session, str) else str(inp.cwd))
+            if status.needs_eval:
+                message = "NEEDS_EVAL: 未評価の Authoring 変更があります: " + ", ".join(
+                    status.paths
+                )
+                if status.block and host == HostId.CLAUDE:
+                    return (
+                        0,
+                        json.dumps({"decision": "block", "reason": message}, ensure_ascii=False),
+                        "",
+                    )
+                return 0, "", message
         outcome = evaluate(inp, policy=policy)
         if unattended and outcome.decision == HookDecision.ASK:
             outcome = HookOutcome(

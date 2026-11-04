@@ -559,6 +559,11 @@ async def _outcome(
                 )
             )
     baseline, candidate = runs
+    from seh.authoring.lifecycle import target_digests
+
+    baseline = replace(
+        baseline, components={**baseline.components, **target_digests(root, record.target_paths)}
+    )
     digests = {f"file:{k}": v for k, v in file_digests(candidate_dir).items()}
     candidate = replace(candidate, components={**candidate.components, **digests})
     return baseline, candidate
