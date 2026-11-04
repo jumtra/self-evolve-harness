@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "A03",
+  "title": "SKILL.md の description を変更",
+  "input": {
+    "request": "work の description を短くして",
+    "existing_skills": [
+      "work"
+    ],
+    "changed_files": [
+      ".claude/skills/work/SKILL.md"
+    ],
+    "eval_state": "AVAILABLE"
+  },
+  "expected": {
+    "state": "AWAITING_EVAL",
+    "assertions": [
+      "fresh_session_required",
+      "trigger_pos_neg_and_outcome_reevaluated"
+    ]
+  }
+}

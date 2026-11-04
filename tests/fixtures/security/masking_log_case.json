@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "note": "FIXTURE DATA: T08 マスキング検査用。秘密値はリテラルで書かず、テスト側で secret_template から生成して {PLACEHOLDER} に差し込む。",
+  "secrets": {
+    "ANTHROPIC_LIKE": {
+      "secret_template": {
+        "prefix": "sk-ant-",
+        "fill": "a",
+        "length": 40
+      }
+    },
+    "AWS_LIKE": {
+      "secret_template": {
+        "prefix": "AKIA",
+        "fill": "A",
+        "length": 16
+      }
+    },
+    "GITHUB_LIKE": {
+      "secret_template": {
+        "prefix": "ghp_",
+        "fill": "b",
+        "length": 36
+      }
+    },
+    "PEM_LIKE": {
+      "secret_template": {
+        "parts": [
+          "-----BEGIN ",
+          "RSA PRIVATE",
+          " KEY-----"
+        ]
+      }
+    }
+  },
+  "log_template": [
+    "2026-11-04T00:00:00Z INFO start run",
+    "2026-11-04T00:00:01Z DEBUG api_key={ANTHROPIC_LIKE}",
+    "2026-11-04T00:00:02Z DEBUG aws={AWS_LIKE}",
+    "2026-11-04T00:00:03Z DEBUG token={GITHUB_LIKE}",
+    "2026-11-04T00:00:04Z DEBUG header={PEM_LIKE}",
+    "2026-11-04T00:00:05Z INFO done"
+  ],
+  "expect": {
+    "masked_output_contains_none_of": [
+      "ANTHROPIC_LIKE",
+      "AWS_LIKE",
+      "GITHUB_LIKE",
+      "PEM_LIKE"
+    ],
+    "preserved_lines": [
+      0,
+      5
+    ]
+  }
+}

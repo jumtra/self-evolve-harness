@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "A07",
+  "title": "Eval が認証不可",
+  "input": {
+    "request": "description を変更して評価して",
+    "existing_skills": [
+      "work"
+    ],
+    "changed_files": [
+      ".claude/skills/work/SKILL.md"
+    ],
+    "eval_state": "AUTH_UNAVAILABLE"
+  },
+  "expected": {
+    "state": "BLOCKED_NO_EVAL",
+    "assertions": [
+      "verdict_is_not_pass",
+      "blocked_reason_recorded"
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "A08",
+  "title": "自己進化の修正候補で回帰",
+  "input": {
+    "request": "evolver が生成した修正候補",
+    "existing_skills": [
+      "work"
+    ],
+    "changed_files": [
+      ".claude/skills/work/SKILL.md"
+    ],
+    "candidate_regressions": [
+      "PS-RG-01"
+    ],
+    "eval_state": "AVAILABLE"
+  },
+  "expected": {
+    "state": "NOT_PROMOTED_ROLLBACK_AVAILABLE",
+    "assertions": [
+      "original_skill_retained",
+      "rollback_possible",
+      "holdout_not_exposed"
+    ]
+  }
+}

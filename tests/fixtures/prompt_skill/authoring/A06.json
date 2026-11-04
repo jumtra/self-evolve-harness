@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "A06",
+  "title": "Bash / 外部 Editor で Prompt を変更",
+  "input": {
+    "request": "(hook 外の変更)",
+    "existing_skills": [
+      "work"
+    ],
+    "changed_files": [
+      ".claude/skills/work/SKILL.md"
+    ],
+    "change_channel": "external_editor",
+    "pretooluse_hook_observed": false,
+    "eval_record": null
+  },
+  "expected": {
+    "state": "REJECTED_UNEVALUATED_CHANGE",
+    "assertions": [
+      "rejected_by_ci_required_check",
+      "does_not_depend_on_pretooluse"
+    ]
+  }
+}

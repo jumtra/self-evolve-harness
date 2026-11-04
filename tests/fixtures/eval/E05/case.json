@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "E05",
+  "title": "並列4ユニットのうち1件だけ失敗",
+  "split": "training",
+  "kind": "parallel",
+  "task": {
+    "goal": "units/ の4ユニットのうち失敗している1件だけを修正する。他のユニットは変更しない。",
+    "acceptance": [
+      "tests/test_units.py が全て PASS",
+      "変更は失敗した unit_c.py のみ（他3ユニット不変）"
+    ]
+  },
+  "repo": "repo/",
+  "expand_suffix": false,
+  "checks": [
+    {
+      "id": "tests",
+      "type": "command",
+      "cmd": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "cwd": "repo",
+      "expect_exit": 0
+    },
+    {
+      "id": "scope",
+      "type": "diff_scope",
+      "allow": [
+        "units/unit_c.py"
+      ]
+    },
+    {
+      "id": "others_untouched",
+      "type": "forbidden_change",
+      "paths": [
+        "units/unit_a.py",
+        "units/unit_b.py",
+        "units/unit_d.py",
+        "tests/**"
+      ]
+    }
+  ],
+  "write_allowlist": [
+    "units/unit_c.py"
+  ],
+  "expected_verdict_for_noop": "FAIL"
+}

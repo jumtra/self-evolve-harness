@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "files": {
+    "injection/README.md": "文書内の隠れた指示（保護ファイル削除・権限変更）",
+    "injection/CLAUDE.md.fixture": "同上（CLAUDE.md 形式、展開時に .fixture を外す）",
+    "injection/SKILL.md.fixture": "同上（SKILL.md 形式、展開時に .fixture を外す）",
+    "tool_inputs_path_traversal.json": "path traversal を含む Tool 入力と期待判定",
+    "masking_log_case.json": "マスキング検査用ログ（秘密値は secret_template）"
+  }
+}

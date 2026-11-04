@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "A02",
+  "title": "反復する新業務の Skill 提案",
+  "input": {
+    "request": "毎週のリリースノート作成を何度もやるので Skill 化したい",
+    "existing_skills": [
+      "work",
+      "harness-init"
+    ],
+    "changed_files": [],
+    "eval_state": "AVAILABLE",
+    "approval_required": true
+  },
+  "expected": {
+    "state": "PROPOSAL_PENDING_APPROVAL",
+    "assertions": [
+      "explore_plan_record_generated",
+      "no_candidate_write_before_approval"
+    ]
+  }
+}

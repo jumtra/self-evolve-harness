@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "A01",
+  "title": "/work への実装依頼（既存 Skill で対応可能）",
+  "input": {
+    "request": "このバグを修正して",
+    "existing_skills": [
+      "work",
+      "harness-init"
+    ],
+    "changed_files": [],
+    "eval_state": "AVAILABLE"
+  },
+  "expected": {
+    "state": "ROUTED_TO_EXISTING",
+    "assertions": [
+      "no_new_skill_created",
+      "routed_to:work"
+    ]
+  }
+}

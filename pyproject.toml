@@ -1,0 +1,50 @@
+[project]
+name = "self-evolve-harness"
+version = "2.0.0a0"
+requires-python = ">=3.11"
+dependencies = [
+    "jsonschema>=4.23",
+    "pyyaml>=6.0",
+    "tomli-w>=1.0",
+]
+
+[project.scripts]
+seh = "seh.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/seh"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+    "pyright>=1.1.390",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["tests/fixtures", ".venv", "node_modules"]
+markers = ["real: 実 CLI スモーク（SEH_REAL_SMOKE=1 必須）"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = ["tests/fixtures", "docs/design"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pyright]
+include = ["src", "tests"]
+exclude = ["tests/fixtures", "docs", "**/__pycache__", ".venv"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"

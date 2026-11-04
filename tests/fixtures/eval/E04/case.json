@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "id": "E04",
+  "title": "公開 API を守るリファクタリング（render の分割）",
+  "split": "training",
+  "kind": "refactor",
+  "task": {
+    "goal": "report.render を公開シグネチャと出力を変えずに _format_row ヘルパーへ分割し、render 本体を15行未満にする。",
+    "acceptance": [
+      "render のシグネチャと出力が api_snapshot.json と一致",
+      "report._format_row が存在する",
+      "render 本体が15行未満"
+    ]
+  },
+  "repo": "repo/",
+  "expand_suffix": false,
+  "checks": [
+    {
+      "id": "tests",
+      "type": "command",
+      "cmd": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "cwd": "repo",
+      "expect_exit": 0
+    },
+    {
+      "id": "scope",
+      "type": "diff_scope",
+      "allow": [
+        "report.py"
+      ]
+    },
+    {
+      "id": "api_frozen",
+      "type": "forbidden_change",
+      "paths": [
+        "api_snapshot.json",
+        "tests/**"
+      ]
+    }
+  ],
+  "write_allowlist": [
+    "report.py"
+  ],
+  "expected_verdict_for_noop": "FAIL"
+}

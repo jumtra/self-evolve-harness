@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "E08",
+  "title": "誤った LLM 自己評価に最終判定が引きずられない",
+  "split": "holdout",
+  "kind": "self_eval",
+  "task": {
+    "goal": "verdict.final_verdict を修正し、チェッカーが FAIL なら LLM 自己評価が PASS でも最終 FAIL にする。",
+    "acceptance": [
+      "最終判定はチェッカー結果のみで決まる",
+      "self_eval は PASS/FAIL 以外の値でも判定を変えない"
+    ]
+  },
+  "repo": "repo/",
+  "expand_suffix": false,
+  "checks": [
+    {
+      "id": "tests",
+      "type": "command",
+      "cmd": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "cwd": "repo",
+      "expect_exit": 0
+    },
+    {
+      "id": "scope",
+      "type": "diff_scope",
+      "allow": [
+        "verdict.py"
+      ]
+    }
+  ],
+  "write_allowlist": [
+    "verdict.py"
+  ],
+  "expected_verdict_for_noop": "FAIL"
+}

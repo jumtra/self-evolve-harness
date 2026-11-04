@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "E01",
+  "title": "単一ファイルのバグ修正（mean の除数）",
+  "split": "training",
+  "kind": "bugfix",
+  "task": {
+    "goal": "stats.mean が誤った値を返す。stats.py のみ修正して全テストを通す。",
+    "acceptance": [
+      "tests/test_stats.py が全て PASS",
+      "stats.py 以外を変更しない"
+    ]
+  },
+  "repo": "repo/",
+  "expand_suffix": false,
+  "checks": [
+    {
+      "id": "tests",
+      "type": "command",
+      "cmd": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "cwd": "repo",
+      "expect_exit": 0
+    },
+    {
+      "id": "scope",
+      "type": "diff_scope",
+      "allow": [
+        "stats.py"
+      ]
+    }
+  ],
+  "write_allowlist": [
+    "stats.py"
+  ],
+  "expected_verdict_for_noop": "FAIL"
+}

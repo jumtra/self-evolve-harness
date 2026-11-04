@@ -32,8 +32,8 @@ YAGNI / KISS / DRY。コメントは WHY のみ。詳細は `.claude/rules/codin
 `/harness-init` が検出したタスクランナーから生成する。monorepo の場合はアプリ単位で併記し、
 編集したアプリの CI を実行する。
 
-- CI_CHECK_CMD: `<CI_CHECK_CMD>`
-- CI_FIX_CMD: `<CI_FIX_CMD>`
+- CI_CHECK_CMD: `uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest -m "not real"`
+- CI_FIX_CMD: `uv run ruff check --fix . && uv run ruff format .`
 
 <!-- monorepo 例（/harness-init が実際の検出結果で置換・展開する）:
 ### <アプリ名>（<パス> / <スタック>）

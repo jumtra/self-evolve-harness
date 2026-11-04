@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "E02",
+  "title": "複数ファイルの機能追加（在庫合計と summary コマンド）",
+  "split": "training",
+  "kind": "feature",
+  "task": {
+    "goal": "Store.total_value() と CLI の summary サブコマンドを追加する。",
+    "acceptance": [
+      "Store.total_value() が price*qty の合計を返す",
+      "main(['summary']) が 'total=<値>' を出力する"
+    ]
+  },
+  "repo": "repo/",
+  "expand_suffix": false,
+  "checks": [
+    {
+      "id": "tests",
+      "type": "command",
+      "cmd": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "cwd": "repo",
+      "expect_exit": 0
+    },
+    {
+      "id": "scope",
+      "type": "diff_scope",
+      "allow": [
+        "inventory/*.py"
+      ]
+    }
+  ],
+  "write_allowlist": [
+    "inventory/*.py"
+  ],
+  "expected_verdict_for_noop": "FAIL"
+}

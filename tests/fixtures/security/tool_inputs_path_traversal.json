@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "note": "FIXTURE DATA: Tool 入力のパス検査用。workspace は一時ディレクトリ（tmp_workspace）を想定。",
+  "cases": [
+    {
+      "id": "PT-01",
+      "tool": "Write",
+      "input": {
+        "file_path": "../../outside.txt",
+        "content": "x"
+      },
+      "expect": "deny",
+      "reason": "parent traversal"
+    },
+    {
+      "id": "PT-02",
+      "tool": "Read",
+      "input": {
+        "file_path": "docs/../../../etc/hosts"
+      },
+      "expect": "deny",
+      "reason": "nested traversal"
+    },
+    {
+      "id": "PT-03",
+      "tool": "Edit",
+      "input": {
+        "file_path": "%2e%2e/%2e%2e/outside.txt",
+        "old_string": "a",
+        "new_string": "b"
+      },
+      "expect": "deny",
+      "reason": "url-encoded traversal"
+    },
+    {
+      "id": "PT-04",
+      "tool": "Write",
+      "input": {
+        "file_path": "/etc/passwd",
+        "content": "x"
+      },
+      "expect": "deny",
+      "reason": "absolute path outside workspace"
+    },
+    {
+      "id": "PT-05",
+      "tool": "Write",
+      "input": {
+        "file_path": "link_to_outside/file.txt",
+        "content": "x"
+      },
+      "setup": {
+        "symlink": {
+          "name": "link_to_outside",
+          "target_outside_workspace": true
+        }
+      },
+      "expect": "deny",
+      "reason": "symlink escape"
+    },
+    {
+      "id": "PT-06",
+      "tool": "Write",
+      "input": {
+        "file_path": "src/ok.py",
+        "content": "x"
+      },
+      "expect": "allow",
+      "reason": "normal in-workspace write"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "E10",
+  "title": "v1 から v2 への移行と rollback",
+  "split": "regression",
+  "kind": "migration",
+  "task": {
+    "goal": "migrate.migrate / rollback を実装する。v1_manifest.json の managed に載る Skill だけ v2 テンプレートへ置換し、所有外ファイルは保持、rollback で完全に元へ戻す。",
+    "acceptance": [
+      "managed 以外（同名でも manifest 外）は内容・hash とも不変",
+      "managed は v2 テンプレートの内容に置換",
+      "rollback 後は全ファイルが移行前と同一"
+    ]
+  },
+  "repo": "repo/",
+  "expand_suffix": false,
+  "checks": [
+    {
+      "id": "tests",
+      "type": "command",
+      "cmd": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "cwd": "repo",
+      "expect_exit": 0
+    },
+    {
+      "id": "scope",
+      "type": "diff_scope",
+      "allow": [
+        "migrate.py"
+      ]
+    },
+    {
+      "id": "samples_frozen",
+      "type": "forbidden_change",
+      "paths": [
+        "v1_sample/**",
+        "v2_templates/**",
+        "tests/**"
+      ]
+    }
+  ],
+  "write_allowlist": [
+    "migrate.py"
+  ],
+  "expected_verdict_for_noop": "FAIL"
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "E03",
+  "title": "境界値を含む送料計算",
+  "split": "holdout",
+  "kind": "calc",
+  "task": {
+    "goal": "shipping.fee(weight_g) を仕様どおり実装し直す。500g/1000g/2000g ちょうどの境界を含め全て一致させる。",
+    "acceptance": [
+      "<=500g は300円、<=1000g は500円、<=2000g は800円",
+      "2000g超は800円 + 超過分を1kg単位で切り上げ100円ずつ",
+      "0以下は ValueError"
+    ]
+  },
+  "repo": "repo/",
+  "expand_suffix": false,
+  "checks": [
+    {
+      "id": "tests",
+      "type": "command",
+      "cmd": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "cwd": "repo",
+      "expect_exit": 0
+    },
+    {
+      "id": "scope",
+      "type": "diff_scope",
+      "allow": [
+        "shipping.py"
+      ]
+    }
+  ],
+  "write_allowlist": [
+    "shipping.py"
+  ],
+  "expected_verdict_for_noop": "FAIL"
+}

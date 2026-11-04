@@ -1,0 +1,251 @@
+{
+  "baseline_ref": "988a019",
+  "paths": {
+    ".claude/.gitignore": {
+      "kind": "other",
+      "sha256": "165c57ebd358f0b2cd27aaa2d6e0bbd7c92bc3ea75f1b16538203d894d74d1cb",
+      "v2_action": "REWRITE"
+    },
+    ".claude/_reference.md": {
+      "kind": "reference",
+      "sha256": "1b62d1639985ebc165238edf0758f8f6aba2eadd8b63ee7b15683dc761b64f08",
+      "v2_action": "MOVE"
+    },
+    ".claude/agents/ci-triage.md": {
+      "kind": "agent",
+      "sha256": "ae946efd052a583e8d46afdddc2eac3918a4c9282617f499668e2fe86755ad26",
+      "v2_action": "DELETE"
+    },
+    ".claude/agents/design-reviewer.md": {
+      "kind": "agent",
+      "sha256": "53e966e79837427695bf5e76cd999f92bec44b839c2d14868ba7ff63df2dbc97",
+      "v2_action": "DELETE"
+    },
+    ".claude/agents/evolver.md": {
+      "kind": "agent",
+      "sha256": "ad7c0c62f80a92d4bdc7abc744388d54e00ac55dc35c17acd94fe30cb2b55ce4",
+      "v2_action": "REWRITE"
+    },
+    ".claude/agents/fixer.md": {
+      "kind": "agent",
+      "sha256": "77a1835945a96519ac66348909c8fa18b6c3ba625195485c075581c30d5fd79e",
+      "v2_action": "REWRITE"
+    },
+    ".claude/agents/implementer.md": {
+      "kind": "agent",
+      "sha256": "ab2a0025e43d316d547c5a8f508966c12759284153fc26de59240f07ae04a428",
+      "v2_action": "REWRITE"
+    },
+    ".claude/agents/refactorer.md": {
+      "kind": "agent",
+      "sha256": "5041e81ed07ef455c3b1674718eb3020fe4547f82206dc5a009628efd152ce53",
+      "v2_action": "DELETE"
+    },
+    ".claude/agents/researcher.md": {
+      "kind": "agent",
+      "sha256": "b2905398706b2251b2a16f868e3fe8dd5777b8ea771d1d4b6fda642cc9881be3",
+      "v2_action": "DELETE"
+    },
+    ".claude/agents/reviewer.md": {
+      "kind": "agent",
+      "sha256": "8d49d5026bb20c1ca747cb0a5bfb20a9b753fcd57b4948868b5fc08f8c84270a",
+      "v2_action": "REWRITE"
+    },
+    ".claude/agents/test-writer.md": {
+      "kind": "agent",
+      "sha256": "79753b561544fbcb2a9ae9c98ea25333f095919b944cb56323485b48a6eefeb3",
+      "v2_action": "DELETE"
+    },
+    ".claude/rules/architecture.md": {
+      "kind": "rule",
+      "sha256": "ce832576c9885bb89e9b6af9b8f83f5b5f4f6705d84bf3ab964fa33793971063",
+      "v2_action": "REWRITE"
+    },
+    ".claude/rules/coding.md": {
+      "kind": "rule",
+      "sha256": "577a9fb450d3f3effdec3ecdb91427cbeb8a8f1da714b1d69bb794547f2a2bc5",
+      "v2_action": "REWRITE"
+    },
+    ".claude/rules/debugging.md": {
+      "kind": "rule",
+      "sha256": "a1cda677bf00436663108b7ef35b837ec844d12ed06f06b16706f8c7e689f621",
+      "v2_action": "DELETE"
+    },
+    ".claude/rules/domain.md": {
+      "kind": "rule",
+      "sha256": "c0489182ccd799e86fe3fc190dbe754baf35a9b653971883adfc28adf70edce2",
+      "v2_action": "MOVE"
+    },
+    ".claude/rules/memory.md": {
+      "kind": "rule",
+      "sha256": "58e74e6d00fce27f0e9f24b497b0343dd886c45fcca25ff68f8617bba77afc53",
+      "v2_action": "DELETE"
+    },
+    ".claude/rules/testing.md": {
+      "kind": "rule",
+      "sha256": "54ae4d6ec068afed44c24445ab441f40c6483f1240194d5acc532568792a12d1",
+      "v2_action": "REWRITE"
+    },
+    ".claude/rules/workflow.md": {
+      "kind": "rule",
+      "sha256": "f825c7f680a0f262aa824f263d973dea343e01e7d6ee38247736495b84b4d39f",
+      "v2_action": "DELETE"
+    },
+    ".claude/settings.json": {
+      "kind": "hook_config",
+      "sha256": "117cdb2a55e9a2f5af57515260f8ce1a7953e1f4f412a48854cb575d5330a76e",
+      "v2_action": "REWRITE"
+    },
+    ".claude/skills/address-review/SKILL.md": {
+      "kind": "skill",
+      "sha256": "578f078d300981d6df35156a065211aa99024a36558b66efbd7a5300a7127962",
+      "v2_action": "DELETE"
+    },
+    ".claude/skills/brainstorm/SKILL.md": {
+      "kind": "skill",
+      "sha256": "c83e9139ea1284a3afce6e6f7d25cd7dbb77d7c7cb3396e883f31f2ab08b930d",
+      "v2_action": "DELETE"
+    },
+    ".claude/skills/brainstorm/references/parallel-dispatch.md": {
+      "kind": "reference",
+      "sha256": "11e7feddad18f630a122327ee113329c2e8674288b542b1d9e8e911d155ac75e",
+      "v2_action": "DELETE"
+    },
+    ".claude/skills/create-pr/SKILL.md": {
+      "kind": "skill",
+      "sha256": "a3644c4ed50d2436d7df66de0d0d0bb02ca5e6fef87d278892bd7c43f8e35269",
+      "v2_action": "DELETE"
+    },
+    ".claude/skills/create-skill/SKILL.md": {
+      "kind": "skill",
+      "sha256": "bab895b06ed95b5b5b9f5b320c9d3759cc17a385552aea6b6f536ca29405861b",
+      "v2_action": "DELETE"
+    },
+    ".claude/skills/desloppify/SKILL.md": {
+      "kind": "skill",
+      "sha256": "c481221a7b7dde073ac42c0603ba44d9b59c0868f4c70e960ab6974fc7a11902",
+      "v2_action": "DELETE"
+    },
+    ".claude/skills/doctor/SKILL.md": {
+      "kind": "skill",
+      "sha256": "e24a9191a5cdb9ee58d474388927df466b0e908129a3a224ed7ff28b7ab514e4",
+      "v2_action": "DELETE"
+    },
+    ".claude/skills/evolve-rules/SKILL.md": {
+      "kind": "skill",
+      "sha256": "1804a4c4e9f2784ee3a0d5e93dcba865947e0c8122c660112012bf8b5cb93739",
+      "v2_action": "DELETE"
+    },
+    ".claude/skills/evolve-rules/references/ahe-principles.md": {
+      "kind": "reference",
+      "sha256": "2a757c10b6e1e1a74f93d5f37ffd09d3827db6957d6b9bd5046e132f4888b3c3",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/SKILL.md": {
+      "kind": "skill",
+      "sha256": "45bea007cc4625cb50ab10538e6aa4b8c5d30a3a0b0d960031c83e01bfb5c39e",
+      "v2_action": "REWRITE"
+    },
+    ".claude/skills/harness-init/languages/_generic.md": {
+      "kind": "reference",
+      "sha256": "c878c73ca5f96505b850625e9e24f5059f97c210a5b4599ee05c98fe0eb10fa9",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/languages/go.md": {
+      "kind": "reference",
+      "sha256": "9e4e35ebe5ef387363316795f361bfa188bc4cca899c33a523e7fc062b87ea71",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/languages/java.md": {
+      "kind": "reference",
+      "sha256": "da12de295b3b3bf94e89ff55ba4b6fa2f847edbb69db3a446bce045d0a67d8e5",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/languages/node.md": {
+      "kind": "reference",
+      "sha256": "88295d82d504aa1679fbae086462e12f73f38f67d07ad39cb4a9464fb007f1c5",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/languages/python.md": {
+      "kind": "reference",
+      "sha256": "58559abc0bc724c17ad35e4b032ab818a55558bce21fefa4993f10ed7b6f6cc0",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/languages/rust.md": {
+      "kind": "reference",
+      "sha256": "1ed9570bda98c6581dfca1128d0c3de1322e0f12a2e1359dcdda30307ccd0844",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/languages/terraform.md": {
+      "kind": "reference",
+      "sha256": "93f2bc489e44055b5a0a1b4a12e425ff49bcb3fd41397f4e7cff24a68cdb97c2",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/shared/hooks-boilerplate.md": {
+      "kind": "reference",
+      "sha256": "40eaff901e8be065fe7e0b396a6bc855755d2c741844ef24e39cb71c3e88d185",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/shared/rules-skeleton.md": {
+      "kind": "reference",
+      "sha256": "0a386184af0d86b79911e7b786e3a59372420a43456a2f56e27353eb7b96b921",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/task-runners/_generic.md": {
+      "kind": "reference",
+      "sha256": "357a1dee9f108ba584af0f65064bdbfe2394835ac8d3a8bfabcdc42952eb5df6",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/task-runners/cargo.md": {
+      "kind": "reference",
+      "sha256": "140bf525e7d35782673818854e31bed29ab2c110c53219189bc0a90839b238a4",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/task-runners/just.md": {
+      "kind": "reference",
+      "sha256": "bbaa976e84b42a9d41b6b646934f0e9851b8d0813cfd47b2155946d3165b93b7",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/task-runners/make.md": {
+      "kind": "reference",
+      "sha256": "664e5c1a458433547fec5cca54e2bf1a788b8eaf31c7d4e493370aaeb97cad23",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/task-runners/moon.md": {
+      "kind": "reference",
+      "sha256": "83678482d169685c8c85c1ace61cad1a1040a842c345cd95a1bc7eda563c8430",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/harness-init/task-runners/npm-scripts.md": {
+      "kind": "reference",
+      "sha256": "90bd27f9a994d2dda1542da0f78c7fe1c626969a3bdefc707cc701ce9b9ad1f9",
+      "v2_action": "MOVE"
+    },
+    ".claude/skills/save-session/SKILL.md": {
+      "kind": "skill",
+      "sha256": "7196019e256169a6e5f40f91e07e7dd5d87bfc27ff93a77982d2dc91694dd807",
+      "v2_action": "DELETE"
+    },
+    ".claude/skills/self-review/SKILL.md": {
+      "kind": "skill",
+      "sha256": "dc20844500d7a53902c5016cc0ca405348295f9b3fda203a0ca2e967c40f89b5",
+      "v2_action": "DELETE"
+    },
+    ".github/pull_request_template.md": {
+      "kind": "template",
+      "sha256": "49510ab010ba480751ef3cb55cf50ec164718502f29d71c42d416b58bd457d58",
+      "v2_action": "KEEP"
+    },
+    "AGENTS.md": {
+      "kind": "instructions",
+      "sha256": "dd9813b86e9608394f236c0e00ef6aaca491a62641ef45faa5c4b2dff681e2d0",
+      "v2_action": "REWRITE"
+    },
+    "CLAUDE.md": {
+      "kind": "instructions",
+      "sha256": "dcd3ca3cdcef84bda77a33c0e7d65e3c807be344e1d825ef3e13edd53ce6650a",
+      "v2_action": "REWRITE"
+    }
+  },
+  "schema_version": 1
+}

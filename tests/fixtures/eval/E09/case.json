@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "E09",
+  "title": "予算上限・中断・再開",
+  "split": "regression",
+  "kind": "budget",
+  "task": {
+    "goal": "runner.run を修正し、予算を超える step は実行せず BUDGET_EXHAUSTED で止め、再開時は完了済み step を再実行しない。",
+    "acceptance": [
+      "累計コストが予算を超えない",
+      "state_path に完了 step を保存し、再開で重複実行しない"
+    ]
+  },
+  "repo": "repo/",
+  "expand_suffix": false,
+  "checks": [
+    {
+      "id": "tests",
+      "type": "command",
+      "cmd": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "cwd": "repo",
+      "expect_exit": 0
+    },
+    {
+      "id": "scope",
+      "type": "diff_scope",
+      "allow": [
+        "runner.py"
+      ]
+    }
+  ],
+  "write_allowlist": [
+    "runner.py"
+  ],
+  "expected_verdict_for_noop": "FAIL"
+}

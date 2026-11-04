@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "id": "E06",
+  "title": "Provider 切替（none / codegraph / graphify）の API 一致",
+  "split": "regression",
+  "kind": "provider",
+  "task": {
+    "goal": "全 Provider が同一 API を持ち、非対応操作は例外でなく {'status': 'UNSUPPORTED'} を返すようにする。",
+    "acceptance": [
+      "find_symbol と callers が全 Provider に存在",
+      "非対応は status=UNSUPPORTED、対応は status=OK"
+    ]
+  },
+  "repo": "repo/",
+  "expand_suffix": false,
+  "checks": [
+    {
+      "id": "tests",
+      "type": "command",
+      "cmd": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "cwd": "repo",
+      "expect_exit": 0
+    },
+    {
+      "id": "scope",
+      "type": "diff_scope",
+      "allow": [
+        "providers/*.py"
+      ]
+    }
+  ],
+  "write_allowlist": [
+    "providers/*.py"
+  ],
+  "expected_verdict_for_noop": "FAIL"
+}

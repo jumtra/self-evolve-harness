@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "A04",
+  "title": "CLAUDE.md へ巨大手順を重複挿入",
+  "input": {
+    "request": "CLAUDE.md に work の手順を全文貼って",
+    "existing_skills": [
+      "work"
+    ],
+    "changed_files": [
+      "CLAUDE.md"
+    ],
+    "inserted_lines": 400,
+    "duplicates": ".claude/skills/work/SKILL.md",
+    "eval_state": "AVAILABLE"
+  },
+  "expected": {
+    "state": "REJECTED_CONTEXT_DUPLICATION",
+    "assertions": [
+      "context_duplication_flagged",
+      "move_to_skill_or_rule_recommended"
+    ]
+  }
+}
