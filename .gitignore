@@ -9,7 +9,6 @@
 
 # ツール生成物
 .codegraph/
-.desloppify/
 
 # OS / エディタ
 .DS_Store

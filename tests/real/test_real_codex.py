@@ -4,6 +4,7 @@ import subprocess
 import pytest
 
 from seh.contracts import RunContext, TerminalState
+from seh.runtime.process import DEFAULT_ENV_ALLOWLIST
 from seh.runtime.runners.codex_cli import CodexCliRunner
 
 pytestmark = pytest.mark.real
@@ -17,13 +18,12 @@ async def test_real_codex_reads_first_line_of_readme(tmp_path):
         worktree=tmp_path,
         cwd=tmp_path,
         deadline_seconds=300,
-        env_allowlist=("PATH", "HOME", "OPENAI_API_KEY", "CODEX_HOME"),
+        env_allowlist=DEFAULT_ENV_ALLOWLIST,
     )
 
     result = await CodexCliRunner(sandbox="read-only").run_once(
         "README.md の1行目を出力して終了", context
     )
 
-    if result.terminal_state is TerminalState.BLOCKED_AUTH:
-        pytest.skip("codex 未認証")
-    assert result.terminal_state is TerminalState.SUCCESS, result
+    assert result.terminal_state is TerminalState.SUCCESS, f"terminal_state={result.terminal_state}"
+    assert result.final_response and "hello smoke" in result.final_response

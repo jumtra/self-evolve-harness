@@ -26,11 +26,10 @@ def test_real_claude_prints_first_line_of_readme(tmp_path):
 
     result = asyncio.run(
         ClaudeCliRunner().run_once(
-            "README.md の1行目をそのまま出力して終了してください。ツールは使わないでください。",
+            "README.md を読み、1行目だけをそのまま出力して終了してください。",
             context,
         )
     )
 
-    if result.terminal_state is TerminalState.BLOCKED_AUTH:
-        pytest.skip("BLOCKED_AUTH")
-    assert result.terminal_state is TerminalState.SUCCESS
+    assert result.terminal_state is TerminalState.SUCCESS, f"terminal_state={result.terminal_state}"
+    assert result.final_response and "hello smoke" in result.final_response

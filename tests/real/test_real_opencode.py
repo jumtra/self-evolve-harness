@@ -21,6 +21,5 @@ async def test_real_opencode_prints_first_line_of_readme(tmp_path):
         "Print the first line of README.md and exit.", context
     )
 
-    if result.terminal_state is TerminalState.BLOCKED_AUTH:
-        pytest.skip("opencode is not authenticated")
-    assert result.terminal_state is TerminalState.SUCCESS
+    assert result.terminal_state is TerminalState.SUCCESS, f"terminal_state={result.terminal_state}"
+    assert result.final_response and "hello-seh-smoke" in result.final_response
