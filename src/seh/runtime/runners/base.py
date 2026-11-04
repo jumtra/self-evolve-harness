@@ -47,6 +47,7 @@ class TerminalDecision:
 class BaseCliRunner(abc.ABC):
     host: str
     command: str
+    supports_read_only = False
 
     def __init__(self, *, artifacts: ArtifactStore | None = None) -> None:
         self._artifacts = artifacts
@@ -135,6 +136,8 @@ class BaseCliRunner(abc.ABC):
         run_id = uuid.uuid4().hex
         if not context.cwd.is_dir() or context.deadline_seconds <= 0:
             return self._result(run_id, TerminalState.FAILED, "INVALID_CONTEXT")
+        if context.permissions_profile == "read-only" and not self.supports_read_only:
+            return self._result(run_id, TerminalState.UNSUPPORTED, "READ_ONLY_UNSUPPORTED")
         try:
             proc = await self._execute(run_id, prompt, context)
         except FileNotFoundError:

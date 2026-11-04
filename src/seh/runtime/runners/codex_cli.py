@@ -27,6 +27,7 @@ _TERMINAL_FAILURES = {"turn.failed": "TURN_FAILED", "error": "CODEX_ERROR"}
 class CodexCliRunner(BaseCliRunner):
     host = "codex"
     command = "codex"
+    supports_read_only = True
 
     def __init__(
         self,
@@ -49,7 +50,7 @@ class CodexCliRunner(BaseCliRunner):
             "-C",
             str(context.cwd),
             "-s",
-            self._sandbox,
+            "read-only" if context.permissions_profile == "read-only" else self._sandbox,
             "--skip-git-repo-check",
         ]
         if self._output_schema_path is not None:

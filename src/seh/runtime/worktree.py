@@ -124,6 +124,14 @@ class WorktreeManager:
         names = {n for n in (tracked + untracked).split("\0") if n}
         return tuple(sorted(names))
 
+    async def include_dependencies(
+        self, ws: UnitWorkspace, dependencies: Sequence[UnitWorkspace]
+    ) -> UnitWorkspace:
+        for dependency in dependencies:
+            await self._git(["merge", "--no-ff", "--no-edit", dependency.branch], ws.path)
+        commit = (await self._git(["rev-parse", "HEAD"], ws.path)).strip()
+        return UnitWorkspace(ws.node_id, ws.path, ws.branch, commit)
+
     def scope_violations(self, changed: Sequence[str], allowlist: Sequence[str]) -> tuple[str, ...]:
         return outside_allowlist(changed, allowlist)
 

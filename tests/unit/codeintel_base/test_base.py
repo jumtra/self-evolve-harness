@@ -80,8 +80,30 @@ def test_provider_for_none_returns_source_fallback(tmp_path):
     assert isinstance(provider, SourceFallbackProvider)
 
 
-def test_provider_for_unimplemented_provider_raises(tmp_path):
+def test_provider_for_unimplemented_provider_raises(tmp_path, monkeypatch):
+    import importlib
+
+    module_name = "seh.providers.codeintel.codegraph"
+    original = importlib.import_module
+
+    def missing(name):
+        if name == module_name:
+            raise ModuleNotFoundError(f"No module named {name}", name=name)
+        return original(name)
+
+    monkeypatch.setattr(importlib, "import_module", missing)
     with pytest.raises(CodeIntelError, match="provider not available"):
+        provider_for("codegraph", tmp_path)
+
+
+def test_missing_dependency_is_not_reported_as_missing_provider(tmp_path, monkeypatch):
+    import importlib
+
+    def missing_dependency(name):
+        raise ModuleNotFoundError("No module named dependency", name="dependency")
+
+    monkeypatch.setattr(importlib, "import_module", missing_dependency)
+    with pytest.raises(ModuleNotFoundError, match="dependency"):
         provider_for("codegraph", tmp_path)
 
 

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "seh://schemas/managed_task.json",
+  "type": "object",
+  "properties": {
+    "task": {"type": "object"},
+    "units": {"type": ["array", "null"], "items": {"type": "object"}},
+    "edges": {"type": ["array", "null"], "items": {"type": "object"}},
+    "checks": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "tool": {"type": "string", "minLength": 1},
+          "args": {"type": "object"}
+        },
+        "required": ["tool", "args"],
+        "additionalProperties": false
+      }
+    },
+    "base": {"type": "string", "minLength": 1}
+  },
+  "required": ["task"],
+  "additionalProperties": false
+}

@@ -95,7 +95,9 @@ class Scheduler:
         run_id: str,
         clock: Callable[[], float] = time.monotonic,
         initial: SchedulerState | None = None,
+        on_transition: Callable[[SchedulerState], None] | None = None,
     ) -> None:
+        self._on_transition = on_transition
         self._graph = graph
         self._run_node = run_node
         self._budget = budget
@@ -163,8 +165,9 @@ class Scheduler:
                     dep_state = self._state.states[dep]
                     if dep_state in _UPSTREAM_BAD:
                         reason = f"UPSTREAM_{dep_state.value}:{dep}"
-                        self._move(node_id, _S.BLOCKED)
+                        # 永続化コールバックが状態と outcome の不整合を見ないよう先に記録する
                         self._state.outcomes[node_id] = NodeOutcome(node_id, _S.BLOCKED, reason)
+                        self._move(node_id, _S.BLOCKED)
                         break
 
     def _start_ready(self) -> None:
@@ -195,8 +198,8 @@ class Scheduler:
             outcome = NodeOutcome(node_id, _S.FAILED, f"INVALID_OUTCOME:{outcome.state.value}")
         if outcome.state is _S.PASSED:
             self._move(node_id, _S.VERIFYING)
-        self._move(node_id, outcome.state)
         self._state.outcomes[node_id] = outcome
+        self._move(node_id, outcome.state)
         return outcome.cost_usd or 0.0
 
     def _move(self, node_id: str, nxt: UnitState) -> None:
@@ -209,3 +212,5 @@ class Scheduler:
                 node_id=node_id,
                 data={"from": current.value, "to": nxt.value},
             )
+        if self._on_transition is not None:
+            self._on_transition(self._state)
