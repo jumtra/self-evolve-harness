@@ -2,7 +2,7 @@
 
 import tomllib
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Literal, cast
 
 import tomli_w
@@ -199,7 +199,10 @@ def _validate_host_list(key: str, value: object) -> tuple[HostId, ...]:
     for item in cast("list[object] | tuple[object, ...]", value):
         if item not in _HOST_VALUES:
             raise ConfigError(f"{key}: 未知のホスト {item!r}（{', '.join(_HOST_VALUES)}）")
-        hosts.append(HostId(cast(str, item)))
+        host = HostId(cast(str, item))
+        if host in hosts:
+            raise ConfigError(f"{key}: ホスト {item!r} が重複しています")
+        hosts.append(host)
     return tuple(hosts)
 
 
@@ -225,6 +228,12 @@ def _validate(key: str, value: object) -> object:
     if tag == "str":
         if not isinstance(value, str) or not value:
             raise ConfigError(f"{key}: 空でない文字列が必要です")
+        if key == "memory.path" and (
+            PurePosixPath(value).is_absolute()
+            or PureWindowsPath(value).is_absolute()
+            or ".." in PurePosixPath(value.replace("\\", "/")).parts
+        ):
+            raise ConfigError(f"{key}: リポジトリ内の相対パス（.. なし）が必要です（{value!r}）")
         return value
     if tag == "strs":
         if not isinstance(value, (list, tuple)) or not all(
@@ -340,8 +349,27 @@ def _flatten_raw(raw: dict[str, Any], prefix: str = "") -> dict[str, object]:
     return flat
 
 
+def _check_consistency(cfg: Config) -> None:
+    enabled = cfg.hosts.enabled
+    selected = cfg.runtime.selected_host
+    if selected != "auto" and HostId(selected) not in enabled:
+        raise ConfigError(f"runtime.selected_host: {selected!r} が hosts.enabled に含まれません")
+    required = cfg.authoring.required_hosts
+    if required != "active" and not set(required) <= set(enabled):
+        raise ConfigError("authoring.required_hosts: hosts.enabled の部分集合である必要があります")
+    if cfg.runtime.max_seconds_per_unit > cfg.runtime.max_total_seconds:
+        raise ConfigError(
+            "runtime.max_seconds_per_unit: max_total_seconds 以下である必要があります"
+        )
+
+
 def load_config(path: Path) -> Config:
-    text = path.read_text(encoding="utf-8")  # 無ければ FileNotFoundError
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        raise  # 呼び出し側が「未設定」として扱う
+    except (UnicodeDecodeError, OSError) as e:
+        raise ConfigError(f"{path}: 読み込めません（{type(e).__name__}: {e}）") from e
     try:
         raw = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
@@ -351,7 +379,9 @@ def load_config(path: Path) -> Config:
     profile = cast(str, validated.get("profile", "balanced"))
     flat = _to_flat(defaults(profile))
     flat.update(validated)
-    return _from_flat(flat)
+    cfg = _from_flat(flat)
+    _check_consistency(cfg)
+    return cfg
 
 
 def _to_toml_value(value: object) -> object:

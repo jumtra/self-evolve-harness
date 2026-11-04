@@ -225,3 +225,16 @@ def test_detect_unreadable_manifest_records_note_and_continues(tmp_path: Path) -
 
     assert any("pyproject.toml" in note for note in result.notes)
     assert result.root_apps[0].languages == ("python", "go")
+
+
+def test_detect_npm_default_placeholder_test_script_is_not_adopted(tmp_path: Path) -> None:
+    (tmp_path / "package.json").write_text(
+        '{"name": "x", "scripts": {"test": "echo \\"Error: no test specified\\" && exit 1", '
+        '"lint": "eslint ."}}'
+    )
+
+    result = detect(tmp_path)
+
+    app = result.root_apps[0]
+    assert app.commands.test is None
+    assert app.commands.lint == "npm run lint"

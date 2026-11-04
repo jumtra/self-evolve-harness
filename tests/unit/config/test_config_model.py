@@ -196,7 +196,10 @@ def test_effective_mode_passes_through_other_modes() -> None:
 
 def test_antigravity_managed_with_disabled_cli_yields_policy_warning(tmp_path: Path) -> None:
     path = tmp_path / "config.toml"
-    path.write_text('[runtime]\nmode = "managed"\nselected_host = "antigravity"\n')
+    path.write_text(
+        '[hosts]\nenabled = ["antigravity"]\n'
+        '[runtime]\nmode = "managed"\nselected_host = "antigravity"\n'
+    )
 
     cfg = load_config(path)
 
@@ -208,6 +211,7 @@ def test_antigravity_managed_with_disabled_cli_yields_policy_warning(tmp_path: P
 def test_antigravity_managed_with_enabled_cli_has_no_warning(tmp_path: Path) -> None:
     path = tmp_path / "config.toml"
     path.write_text(
+        '[hosts]\nenabled = ["antigravity"]\n\n'
         '[runtime]\nmode = "managed"\nselected_host = "antigravity"\n\n'
         '[hosts.antigravity]\nmanaged_cli = "enabled"\n'
     )

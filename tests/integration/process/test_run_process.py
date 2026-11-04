@@ -130,3 +130,27 @@ async def test_run_process_missing_executable_raises(tmp_path: Path):
 async def test_run_process_rejects_invalid_argv(tmp_path: Path, argv: list):
     with pytest.raises(ValueError):
         await run_process(argv, cwd=tmp_path, env={}, timeout_seconds=5)
+
+
+async def test_run_process_returns_early_when_grandchild_holds_pipes(tmp_path: Path):
+    import time
+
+    start = time.monotonic()
+
+    result = await run_process(
+        ["sh", "-c", "sleep 30 & echo done"],
+        cwd=tmp_path,
+        env=dict(os.environ),
+        timeout_seconds=20,
+        kill_grace_seconds=1.0,
+    )
+
+    assert result.exit_code == 0
+    assert not result.timed_out
+    assert b"done" in result.stdout
+    assert time.monotonic() - start < 3.0
+    leftover = await asyncio.create_subprocess_exec(
+        "pgrep", "-f", "sleep 30", stdout=asyncio.subprocess.PIPE
+    )
+    out, _ = await leftover.communicate()
+    assert out.strip() == b""

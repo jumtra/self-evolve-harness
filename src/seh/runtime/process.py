@@ -59,19 +59,24 @@ def build_env(
     return {k: v for k, v in env.items() if not _is_blocked_key(k)}
 
 
-async def _drain(stream: asyncio.StreamReader | None, limit: int) -> tuple[bytes, bool]:
+class _Capture:
+    """キャンセルされても部分出力を失わないための受け皿。"""
+
+    def __init__(self) -> None:
+        self.data = bytearray()
+        self.truncated = False
+
+
+async def _drain(stream: asyncio.StreamReader | None, limit: int, cap: _Capture) -> None:
     # 上限超過後も読み続けて子のパイプ詰まりを防ぐ
-    buf = bytearray()
-    truncated = False
     if stream is None:
-        return b"", False
+        return
     while chunk := await stream.read(_READ_CHUNK):
-        room = limit - len(buf)
+        room = limit - len(cap.data)
         if room > 0:
-            buf.extend(chunk[:room])
+            cap.data.extend(chunk[:room])
         if len(chunk) > room:
-            truncated = True
-    return bytes(buf), truncated
+            cap.truncated = True
 
 
 def _signal_group(pgid: int, sig: signal.Signals) -> None:
@@ -141,22 +146,34 @@ async def run_process(
         except (BrokenPipeError, ConnectionResetError):
             pass
 
-    async def communicate() -> tuple[tuple[bytes, bool], tuple[bytes, bool]]:
-        out, err, _ = await asyncio.gather(
-            _drain(proc.stdout, max_output_bytes),
-            _drain(proc.stderr, max_output_bytes),
+    out_buf = _Capture()
+    err_buf = _Capture()
+
+    async def communicate() -> None:
+        drains = asyncio.gather(
+            _drain(proc.stdout, max_output_bytes, out_buf),
+            _drain(proc.stderr, max_output_bytes, err_buf),
             feed(),
         )
-        await proc.wait()
-        return out, err
+        # Process.wait() は全パイプが閉じるまで戻らないため、returncode を直接ポーリングする
+        while proc.returncode is None and not drains.done():
+            await asyncio.sleep(0.02)
+        # 孫がパイプを保持し続けると EOF が来ないため、リーダー終了後の drain は猶予付きにする
+        try:
+            await asyncio.wait_for(asyncio.shield(drains), kill_grace_seconds)
+        except TimeoutError:
+            _signal_group(proc.pid, signal.SIGKILL)
+            drains.cancel()
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await drains
+        with contextlib.suppress(TimeoutError):
+            await asyncio.wait_for(proc.wait(), kill_grace_seconds)
 
     timed_out = False
     cancelled = False
-    out: tuple[bytes, bool] = (b"", False)
-    err: tuple[bytes, bool] = (b"", False)
     reader = asyncio.ensure_future(communicate())
     try:
-        out, err = await asyncio.wait_for(asyncio.shield(reader), timeout_seconds)
+        await asyncio.wait_for(asyncio.shield(reader), timeout_seconds)
     except TimeoutError:
         timed_out = True
     except asyncio.CancelledError:
@@ -169,17 +186,17 @@ async def run_process(
         if not reader.done():
             reader.cancel()
         with contextlib.suppress(asyncio.CancelledError, Exception):
-            # kill 後は EOF で drain が完了するので、タイムアウト前の部分出力も保持する
-            out, err = await reader
+            # kill 後は EOF で drain が完了するので部分出力も保持する。上限付きで無期限待ちを避ける
+            await asyncio.wait_for(reader, kill_grace_seconds + 1)
 
     return ProcessResult(
         argv_digest=digest,
         exit_code=proc.returncode,
-        stdout=out[0],
-        stderr=err[0],
+        stdout=bytes(out_buf.data),
+        stderr=bytes(err_buf.data),
         timed_out=timed_out,
         cancelled=cancelled,
-        stdout_truncated=out[1],
-        stderr_truncated=err[1],
+        stdout_truncated=out_buf.truncated,
+        stderr_truncated=err_buf.truncated,
         duration_seconds=time.monotonic() - start,
     )

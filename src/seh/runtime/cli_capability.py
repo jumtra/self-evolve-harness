@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import os
 import re
 import shutil
@@ -45,24 +46,21 @@ async def _collect(spec: ProbeSpec, timeout: float) -> tuple[str, str]:
     return version_out, help_out
 
 
-def probe_cli(
-    host: str,
-    spec: ProbeSpec,
-    *,
-    policy_blocked: bool = False,
-    timeout_seconds: float = 10,
+def _not_installed(host: str, spec: ProbeSpec, policy_blocked: bool) -> RuntimeCapabilityReport:
+    return RuntimeCapabilityReport(
+        host=host,
+        installed=False,
+        version=None,
+        authenticated=None,
+        capabilities={name: CapabilityLevel.UNSUPPORTED for name in spec.required_flags},
+        policy_blocked=policy_blocked,
+        notes=("CLI not found on PATH",),
+    )
+
+
+def _build_report(
+    host: str, spec: ProbeSpec, policy_blocked: bool, version_out: str, help_out: str
 ) -> RuntimeCapabilityReport:
-    if shutil.which(spec.command) is None:
-        return RuntimeCapabilityReport(
-            host=host,
-            installed=False,
-            version=None,
-            authenticated=None,
-            capabilities={name: CapabilityLevel.UNSUPPORTED for name in spec.required_flags},
-            policy_blocked=policy_blocked,
-            notes=("CLI not found on PATH",),
-        )
-    version_out, help_out = asyncio.run(_collect(spec, timeout_seconds))
     match = _VERSION.search(version_out)
     capabilities = {
         name: (
@@ -81,3 +79,39 @@ def probe_cli(
         policy_blocked=policy_blocked,
         notes=(),
     )
+
+
+async def probe_cli_async(
+    host: str,
+    spec: ProbeSpec,
+    *,
+    policy_blocked: bool = False,
+    timeout_seconds: float = 10,
+) -> RuntimeCapabilityReport:
+    if shutil.which(spec.command) is None:
+        return _not_installed(host, spec, policy_blocked)
+    version_out, help_out = await _collect(spec, timeout_seconds)
+    return _build_report(host, spec, policy_blocked, version_out, help_out)
+
+
+def probe_cli(
+    host: str,
+    spec: ProbeSpec,
+    *,
+    policy_blocked: bool = False,
+    timeout_seconds: float = 10,
+) -> RuntimeCapabilityReport:
+    def run() -> RuntimeCapabilityReport:
+        return asyncio.run(
+            probe_cli_async(
+                host, spec, policy_blocked=policy_blocked, timeout_seconds=timeout_seconds
+            )
+        )
+
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return run()
+    # 実行中ループ上では asyncio.run できないため別スレッドの新規ループで実行する
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(run).result()

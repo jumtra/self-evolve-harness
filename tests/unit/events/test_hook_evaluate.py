@@ -47,7 +47,7 @@ def test_external_effect_commands_ask(command: str, tmp_path: Path) -> None:
     outcome = evaluate(inp, policy=Policy())
 
     assert outcome.decision == HookDecision.ASK
-    assert outcome.reason_code == "EXTERNAL_EFFECT"
+    assert outcome.reason_code == "EXTERNAL_EFFECT_REQUIRES_APPROVAL"
 
 
 @pytest.mark.parametrize("command", ["ls -la", "uv run pytest -q", "git status", "rm file.txt"])

@@ -65,3 +65,45 @@ def test_opencode_plugin_template_contains_required_contract() -> None:
     assert "throw new Error" in source
     assert "console.warn" in source
     assert "ENOENT" in source
+
+
+def test_shim_converts_unexpected_exit_code_to_block_for_pretooluse(tmp_path: Path) -> None:
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    fake_seh = fake_bin / "seh"
+    fake_seh.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    os.chmod(fake_seh, 0o755)
+
+    result = subprocess.run(
+        ["/bin/sh", str(TEMPLATES / "seh-hook.sh"), "PreToolUse"],
+        env={"PATH": str(fake_bin)},
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert result.stderr != ""
+
+
+def test_shim_keeps_unexpected_exit_code_for_non_blocking_events(tmp_path: Path) -> None:
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    fake_seh = fake_bin / "seh"
+    fake_seh.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    os.chmod(fake_seh, 0o755)
+
+    result = subprocess.run(
+        ["/bin/sh", str(TEMPLATES / "seh-hook.sh"), "SessionStart"],
+        env={"PATH": str(fake_bin)},
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+
+
+def test_opencode_plugin_has_timeout_and_fails_closed_on_spawn_error() -> None:
+    source = (TEMPLATES / "seh-guard.ts").read_text(encoding="utf-8")
+
+    assert "timeout: 10000" in source
+    assert "result.signal" in source

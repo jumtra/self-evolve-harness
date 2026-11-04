@@ -39,4 +39,4 @@ def test_commit_chained_with_push_asks_when_diff_is_clean(tmp_path: Path) -> Non
     outcome = evaluate(inp, policy=Policy())
 
     assert outcome.decision == HookDecision.ASK
-    assert outcome.reason_code == "EXTERNAL_EFFECT"
+    assert outcome.reason_code == "EXTERNAL_EFFECT_REQUIRES_APPROVAL"

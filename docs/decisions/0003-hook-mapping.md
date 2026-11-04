@@ -27,3 +27,7 @@
 - https://learn.chatgpt.com/docs/hooks
 - https://docs.opencode.ai/docs/plugins/
 - https://antigravity.google/docs/hooks
+
+## 既知の制約（P1 レビュー後に追記）
+- commit 前秘密スキャンは `git diff --cached` / `git diff HEAD`（`-a`・同一コマンド内 `git add` 時）を走査する。`git add . && git commit` で**新規の未追跡ファイル**に含まれる秘密は検出できない（`git diff` は untracked を見ない）。最終防御は CI のシークレットスキャン（FR-079）とする。
+- Hook は Native の早期検出であり安全境界の唯一の手段ではない（01 §4）。非対話実行は `--unattended` / `SEH_UNATTENDED=1` で ASK を DENY に倒す。

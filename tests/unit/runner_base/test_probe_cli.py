@@ -1,7 +1,7 @@
 import shutil
 
 from seh.contracts import CapabilityLevel
-from seh.runtime.cli_capability import ProbeSpec, probe_cli
+from seh.runtime.cli_capability import ProbeSpec, probe_cli, probe_cli_async
 
 
 def test_probe_reports_version_and_native_when_flags_present():
@@ -55,4 +55,21 @@ def test_probe_with_policy_blocked_still_reports_and_flags_block():
     report = probe_cli("py", spec, policy_blocked=True)
 
     assert report.policy_blocked is True
+    assert report.installed is True
+
+
+async def test_probe_cli_can_be_called_from_running_event_loop():
+    spec = ProbeSpec(command="python3", required_flags={"version_flag": ("--version",)})
+
+    report = probe_cli("py", spec)
+
+    assert report.installed is True
+    assert report.capabilities["version_flag"] is CapabilityLevel.NATIVE
+
+
+async def test_probe_cli_async_returns_report():
+    spec = ProbeSpec(command="python3", required_flags={"version_flag": ("--version",)})
+
+    report = await probe_cli_async("py", spec)
+
     assert report.installed is True

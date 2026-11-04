@@ -19,21 +19,24 @@ class ExplodingPolicy(Policy):
         unattended: bool,
         token: ApprovalToken | None = None,
         token_scope: str | None = None,
-        target_digest: str | None = None,
         now: datetime,
     ) -> Decision:
         raise RuntimeError("boom")
 
 
 def test_unknown_event_is_blocked_for_claude() -> None:
-    code, _, stderr = run_hook("Bogus", HostId.CLAUDE, b"{}", policy=Policy(), trace=None)
+    code, _, stderr = run_hook(
+        "Bogus", HostId.CLAUDE, b"{}", policy=Policy(), trace=None, unattended=False
+    )
 
     assert code == 2
     assert stderr != ""
 
 
 def test_malformed_pretooluse_is_blocked_for_claude() -> None:
-    code, _, stderr = run_hook("PreToolUse", HostId.CLAUDE, b"{oops", policy=Policy(), trace=None)
+    code, _, stderr = run_hook(
+        "PreToolUse", HostId.CLAUDE, b"{oops", policy=Policy(), trace=None, unattended=False
+    )
 
     assert code == 2
     assert stderr != ""
@@ -41,7 +44,7 @@ def test_malformed_pretooluse_is_blocked_for_claude() -> None:
 
 def test_malformed_pretooluse_on_antigravity_returns_deny_json() -> None:
     code, stdout, _ = run_hook(
-        "PreToolUse", HostId.ANTIGRAVITY, b"{oops", policy=Policy(), trace=None
+        "PreToolUse", HostId.ANTIGRAVITY, b"{oops", policy=Policy(), trace=None, unattended=False
     )
 
     assert code == 0
@@ -54,7 +57,7 @@ def test_policy_exception_blocks_pretooluse() -> None:
     ).encode()
 
     code, _, stderr = run_hook(
-        "PreToolUse", HostId.CLAUDE, payload, policy=ExplodingPolicy(), trace=None
+        "PreToolUse", HostId.CLAUDE, payload, policy=ExplodingPolicy(), trace=None, unattended=False
     )
 
     assert code == 2
@@ -67,7 +70,12 @@ def test_policy_exception_on_antigravity_returns_deny_json() -> None:
     ).encode()
 
     code, stdout, _ = run_hook(
-        "PreToolUse", HostId.ANTIGRAVITY, payload, policy=ExplodingPolicy(), trace=None
+        "PreToolUse",
+        HostId.ANTIGRAVITY,
+        payload,
+        policy=ExplodingPolicy(),
+        trace=None,
+        unattended=False,
     )
 
     assert code == 0
@@ -81,7 +89,7 @@ def test_session_start_exception_warns_and_passes(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(events, "SESSION_START_HANDLERS", [failing_handler])
 
     code, stdout, stderr = run_hook(
-        "SessionStart", HostId.CLAUDE, b"{}", policy=Policy(), trace=None
+        "SessionStart", HostId.CLAUDE, b"{}", policy=Policy(), trace=None, unattended=False
     )
 
     assert code == 0
@@ -90,7 +98,9 @@ def test_session_start_exception_warns_and_passes(monkeypatch: pytest.MonkeyPatc
 
 
 def test_malformed_session_start_warns_and_passes() -> None:
-    code, _, stderr = run_hook("SessionStart", HostId.CLAUDE, b"nope", policy=Policy(), trace=None)
+    code, _, stderr = run_hook(
+        "SessionStart", HostId.CLAUDE, b"nope", policy=Policy(), trace=None, unattended=False
+    )
 
     assert code == 0
     assert "警告" in stderr
@@ -103,7 +113,9 @@ def test_session_start_handler_outputs_are_joined_on_stdout(
         events, "SESSION_START_HANDLERS", [lambda inp: "one", lambda inp: None, lambda inp: "two"]
     )
 
-    code, stdout, _ = run_hook("SessionStart", HostId.CLAUDE, b"{}", policy=Policy(), trace=None)
+    code, stdout, _ = run_hook(
+        "SessionStart", HostId.CLAUDE, b"{}", policy=Policy(), trace=None, unattended=False
+    )
 
     assert code == 0
     assert stdout == "one\ntwo"
@@ -120,7 +132,14 @@ def test_trace_records_decision_with_command_hash_only(tmp_path: Path) -> None:
         {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(tmp_path)}
     ).encode()
 
-    run_hook("PreToolUse", HostId.CLAUDE, payload, policy=Policy(), trace=TraceWriter(trace_path))
+    run_hook(
+        "PreToolUse",
+        HostId.CLAUDE,
+        payload,
+        policy=Policy(),
+        trace=TraceWriter(trace_path),
+        unattended=False,
+    )
 
     raw_text = trace_path.read_text(encoding="utf-8")
     record = read_trace(trace_path)[0]

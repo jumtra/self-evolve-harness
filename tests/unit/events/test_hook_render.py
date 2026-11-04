@@ -67,13 +67,13 @@ def test_antigravity_deny_prints_deny_json_with_exit_0() -> None:
     assert json.loads(stdout) == {"decision": "deny", "reason": "blocked"}
 
 
-def test_antigravity_ask_prints_ask_json() -> None:
+def test_antigravity_ask_is_rendered_as_deny_json() -> None:
     outcome = HookOutcome(HookDecision.ASK, "PROTECTED_PATH", "confirm")
 
     code, stdout, _ = render_outcome(outcome, HostId.ANTIGRAVITY)
 
     assert code == 0
-    assert json.loads(stdout) == {"decision": "ask", "reason": "confirm"}
+    assert json.loads(stdout) == {"decision": "deny", "reason": "confirm"}
 
 
 def test_antigravity_allow_is_silent() -> None:

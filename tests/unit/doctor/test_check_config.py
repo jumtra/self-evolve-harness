@@ -33,7 +33,9 @@ def test_valid_config_has_no_findings(tmp_path: Path) -> None:
 def test_policy_warnings_are_reported_as_warn(tmp_path: Path) -> None:
     (tmp_path / ".harness").mkdir()
     (tmp_path / ".harness" / "config.toml").write_text(
-        '[runtime]\nmode = "managed"\nselected_host = "antigravity"\n', encoding="utf-8"
+        '[hosts]\nenabled = ["antigravity"]\n\n'
+        '[runtime]\nmode = "managed"\nselected_host = "antigravity"\n',
+        encoding="utf-8",
     )
 
     findings = check_config.run(DoctorContext(root=tmp_path, options={}))

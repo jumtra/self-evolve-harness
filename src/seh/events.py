@@ -10,49 +10,38 @@ import hashlib
 import json
 import posixpath
 import re
-import shlex
 import subprocess
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
-from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import cast
 
 from seh.contracts import HostId
-from seh.policy import Action, Policy, is_protected_path
+from seh.policy import (
+    Action,
+    Policy,
+    UnparseableCommand,
+    is_protected_path,
+    is_sensitive_path,
+    is_tool_config_path,
+    split_segments,
+    strip_wrappers,
+)
 from seh.redaction import contains_secret
 from seh.trace import TraceWriter
 
 KNOWN_EVENTS = frozenset({"PreToolUse", "PostToolUse", "SessionStart", "Stop"})
 
-_BASH_TOOLS = frozenset({"bash", "shell", "run_command", "run_shell_command", "exec_command"})
 _GIT_DIFF_TIMEOUT_SECONDS = 10
-
-_SENSITIVE_NAME_GLOBS = (".env", ".env.*", "*.pem", "*.key", "*credential*", "*secret*")
-_TOOL_CONFIG_GLOBS = (
-    ".eslintrc*",
-    "eslint.config.*",
-    ".prettierrc*",
-    "prettier.config.*",
-    "biome.json*",
-    "ruff.toml",
-    ".ruff.toml",
-    "pyrightconfig.json",
-    "mypy.ini",
-    ".flake8",
-    "tsconfig*.json",
-    ".golangci.*",
-    "rustfmt.toml",
-    "clippy.toml",
-    ".editorconfig",
-)
-
+_COMMAND_KEYS = ("command", "cmd", "script")
 _FORK_BOMB = re.compile(r":\(\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:")
-_SEGMENT_SPLIT = re.compile(r"[;&|\n]+")
-_ROOT_TARGETS = frozenset({"/", "/*", "~", "~/", "~/*", "$HOME", "$HOME/", "$HOME/*", "${HOME}"})
-_WRAPPERS = frozenset({"sudo", "env", "nohup", "time", "command", "exec"})
+_ROOT_TARGETS = frozenset(
+    {"/", "//", "/.", "/*", "~", "~/", "~/*", "$HOME", "$HOME/", "$HOME/*", "${HOME}"}
+)
+_GIT_DIFF_FLAGS = ("--no-ext-diff", "--no-textconv")
+_UNATTENDED_NOTE = "無人実行では承認できない"
 
 
 class MalformedHookInput(ValueError):
@@ -105,21 +94,34 @@ def _as_dict(value: object, what: str) -> Mapping[str, object]:
     return cast("Mapping[str, object]", value)
 
 
+def _walk_paths(value: object, under_path_key: bool, found: list[str]) -> None:
+    if isinstance(value, dict):
+        for key, child in cast("Mapping[object, object]", value).items():
+            _walk_paths(child, isinstance(key, str) and "path" in key.lower(), found)
+    elif isinstance(value, list):
+        for child in cast("list[object]", value):
+            _walk_paths(child, under_path_key, found)
+    elif isinstance(value, str) and under_path_key and value:
+        found.append(value)
+
+
 def _collect_paths(args: Mapping[str, object]) -> tuple[str, ...]:
-    paths: list[str] = []
-    for key in ("file_path", "filePath", "path"):
+    found: list[str] = []
+    _walk_paths(args, False, found)
+    # `files` は path を含まないキー名だが、複数ファイルを渡す慣用名として明示的に拾う
+    files = args.get("files")
+    if isinstance(files, list):
+        found.extend(f for f in cast("list[object]", files) if isinstance(f, str) and f)
+    return tuple(found)
+
+
+def _find_command(args: Mapping[str, object]) -> str | None:
+    # 非文字列の値は無視せず不正入力として扱う（評価されない command を作らない）
+    for key in _COMMAND_KEYS:
         value = _as_str(args.get(key), key)
-        if value:
-            paths.append(value)
-    edits = args.get("edits")
-    if edits is not None:
-        if not isinstance(edits, list):
-            raise MalformedHookInput("edits must be an array")
-        for edit in edits:
-            value = _as_str(_as_dict(edit, "edit").get("file_path"), "edits[].file_path")
-            if value:
-                paths.append(value)
-    return tuple(paths)
+        if value is not None:
+            return value
+    return None
 
 
 def parse_hook_input(event: str, host: HostId, payload: bytes) -> HookInput:
@@ -138,18 +140,18 @@ def parse_hook_input(event: str, host: HostId, payload: bytes) -> HookInput:
         tool = _as_str(data.get("tool"), "tool")
         args = _as_dict(data.get("args"), "args")
         cwd = _as_str(data.get("cwd"), "cwd")
-        if needs_tool and tool is None:
-            raise MalformedHookInput("tool is required")
     else:
         tool = _as_str(data.get("tool_name"), "tool_name")
         args = _as_dict(data.get("tool_input"), "tool_input")
         cwd = _as_str(data.get("cwd"), "cwd")
+    if event == "PreToolUse" and tool is None:
+        raise MalformedHookInput("tool is required")
 
     return HookInput(
         event=event,
         host=host,
         tool=tool,
-        command=_as_str(args.get("command"), "command"),
+        command=_find_command(args),
         paths=_collect_paths(args),
         cwd=Path(cwd) if cwd else Path.cwd(),
         raw=data,
@@ -173,24 +175,13 @@ def _antigravity_fields(
     return tool, _as_dict(call_dict.get("args"), "toolCall.args"), cwd
 
 
-def _segments(command: str) -> list[list[str]]:
-    result: list[list[str]] = []
-    for part in _SEGMENT_SPLIT.split(command):
-        try:
-            argv = shlex.split(part)
-        except ValueError:
-            argv = part.split()
-        while argv and argv[0] in _WRAPPERS:
-            argv = argv[1:]
-        if argv:
-            result.append(argv)
-    return result
-
-
 def _is_catastrophic(command: str) -> bool:
     if _FORK_BOMB.search(command):
         return True
-    for argv in _segments(command):
+    for segment in split_segments(command):
+        argv = strip_wrappers(segment)
+        if not argv:
+            continue
         name = posixpath.basename(argv[0])
         args = argv[1:]
         if name.startswith("mkfs"):
@@ -202,20 +193,29 @@ def _is_catastrophic(command: str) -> bool:
     return False
 
 
-def _is_recursive_rm_of_root(args: list[str]) -> bool:
+def _is_recursive_rm_of_root(args: Sequence[str]) -> bool:
     flags = "".join(a[1:] for a in args if a.startswith("-") and not a.startswith("--"))
     recursive = "r" in flags or "R" in flags or "--recursive" in args
     return recursive and any(a in _ROOT_TARGETS for a in args)
 
 
-def _is_git_commit(command: str) -> bool:
-    return any(posixpath.basename(a[0]) == "git" and "commit" in a[1:] for a in _segments(command))
+class SecretScanFailed(RuntimeError):
+    pass
 
 
-def _staged_diff_has_secret(cwd: Path) -> bool:
-    # 失敗・タイムアウトは例外のまま伝播させ、run_hook の fail-closed に任せる
-    result = subprocess.run(
-        ["git", "diff", "--cached"],
+def _is_git(argv: Sequence[str]) -> bool:
+    return bool(argv) and posixpath.basename(argv[0]) == "git"
+
+
+def _is_commit_all(args: Sequence[str]) -> bool:
+    return any(
+        a == "--all" or (a.startswith("-") and not a.startswith("--") and "a" in a) for a in args
+    )
+
+
+def _git_output(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
         cwd=cwd,
         capture_output=True,
         text=True,
@@ -223,58 +223,89 @@ def _staged_diff_has_secret(cwd: Path) -> bool:
         timeout=_GIT_DIFF_TIMEOUT_SECONDS,
         check=False,
     )
-    return contains_secret(result.stdout)
+
+
+def _diff_text(cwd: Path, *args: str) -> str:
+    result = _git_output(cwd, "diff", *args, *_GIT_DIFF_FLAGS)
+    if result.returncode != 0:
+        raise SecretScanFailed(f"git diff exited with {result.returncode}")
+    return result.stdout
+
+
+def _diffs_have_secret(cwd: Path, *, include_worktree: bool) -> bool:
+    texts = [_diff_text(cwd, "--cached")]
+    if include_worktree:
+        has_head = _git_output(cwd, "rev-parse", "--verify", "-q", "HEAD").returncode == 0
+        texts.append(_diff_text(cwd, "HEAD") if has_head else _diff_text(cwd))
+    return any(contains_secret(text) for text in texts)
+
+
+def _evaluate_commit(inp: HookInput, segments: list[tuple[str, ...]]) -> HookOutcome | None:
+    commits = [s for s in segments if _is_git(s) and "commit" in s[1:]]
+    if not commits:
+        return None
+    includes_worktree = any(_is_commit_all(c[1:]) for c in commits) or any(
+        _is_git(s) and "add" in s[1:] for s in segments
+    )
+    try:
+        has_secret = _diffs_have_secret(inp.cwd, include_worktree=includes_worktree)
+    except (SecretScanFailed, subprocess.SubprocessError, OSError) as e:
+        return HookOutcome(
+            HookDecision.DENY,
+            "SECRET_SCAN_FAILED",
+            f"commit 前の秘密情報スキャンに失敗したためブロックしました: {type(e).__name__}",
+        )
+    if has_secret:
+        return HookOutcome(
+            HookDecision.DENY,
+            "SECRET_IN_STAGED_DIFF",
+            "commit 対象の差分に秘密情報の疑いがあるため commit をブロックしました",
+        )
+    changes_dir = any(posixpath.basename(s[0]) in {"cd", "pushd"} for s in segments) or any(
+        a == "-C" or a.startswith(("-C", "--git-dir", "--work-tree"))
+        for c in commits
+        for a in c[1:]
+    )
+    if changes_dir:
+        return HookOutcome(
+            HookDecision.ASK,
+            "COMMIT_OUTSIDE_CWD",
+            "cwd 外のリポジトリへの commit の可能性があり、秘密スキャンできません。承認が必要です",
+        )
+    return None
 
 
 def _evaluate_command(inp: HookInput, command: str, policy: Policy) -> HookOutcome:
+    try:
+        segments = [strip_wrappers(s) for s in split_segments(command)]
+    except UnparseableCommand:
+        return HookOutcome(
+            HookDecision.DENY, "UNPARSEABLE_COMMAND", "コマンドを解析できないためブロックしました"
+        )
     if _is_catastrophic(command):
         return HookOutcome(
             HookDecision.DENY, "CATASTROPHIC_COMMAND", "破壊的コマンドはブロックされました"
         )
-    if _is_git_commit(command) and _staged_diff_has_secret(inp.cwd):
-        return HookOutcome(
-            HookDecision.DENY,
-            "SECRET_IN_STAGED_DIFF",
-            "staged 差分に秘密情報の疑いがあるため commit をブロックしました",
-        )
+    commit_outcome = _evaluate_commit(inp, [s for s in segments if s])
+    if commit_outcome is not None:
+        return commit_outcome
     decision = policy.authorize(Action("command", command), unattended=False, now=datetime.now(UTC))
     if decision.allowed:
         return _ALLOW
-    if decision.reason_code == "R2_REQUIRES_APPROVAL":
-        return HookOutcome(
-            HookDecision.ASK, "R2_REQUIRES_APPROVAL", "高リスク操作です。承認が必要です"
-        )
-    return HookOutcome(
-        HookDecision.ASK, "EXTERNAL_EFFECT", "外部作用のある操作です。承認が必要です"
-    )
-
-
-def _matches(name: str, globs: tuple[str, ...]) -> bool:
-    lowered = name.lower()
-    return any(fnmatchcase(lowered, g) for g in globs)
-
-
-def _relative_to_cwd(path: str, cwd: Path) -> str:
-    candidate = Path(path)
-    if candidate.is_absolute():
-        try:
-            return candidate.relative_to(cwd).as_posix()
-        except ValueError:
-            return path
-    return path
+    return HookOutcome(HookDecision.ASK, decision.reason_code, decision.message)
 
 
 def _evaluate_path(path: str, cwd: Path) -> HookOutcome:
     name = posixpath.basename(path)
-    if _matches(name, _SENSITIVE_NAME_GLOBS):
+    if is_sensitive_path(path):
         return HookOutcome(HookDecision.DENY, "SENSITIVE_FILE", f"機密ファイルの編集は禁止: {name}")
-    if _matches(name, _TOOL_CONFIG_GLOBS):
+    if is_tool_config_path(path):
         return HookOutcome(
             HookDecision.DENY,
             "PROTECTED_TOOL_CONFIG",
             f"Linter/Formatter/型チェッカー設定の編集は禁止: {name}",
         )
-    if is_protected_path(_relative_to_cwd(path, cwd)):
+    if is_protected_path(path, root=cwd):
         return HookOutcome(HookDecision.ASK, "PROTECTED_PATH", f"保護パスの編集です: {path}")
     return _ALLOW
 
@@ -291,8 +322,10 @@ def _evaluate_paths(inp: HookInput) -> HookOutcome:
 def evaluate(inp: HookInput, *, policy: Policy) -> HookOutcome:
     if inp.event != "PreToolUse":
         return _ALLOW
-    if inp.command is not None and (inp.tool or "").lower() in _BASH_TOOLS:
-        return _evaluate_command(inp, inp.command, policy)
+    if inp.command is not None:
+        command_outcome = _evaluate_command(inp, inp.command, policy)
+        if command_outcome.decision != HookDecision.ALLOW:
+            return command_outcome
     if inp.paths:
         return _evaluate_paths(inp)
     return _ALLOW
@@ -315,7 +348,8 @@ def render_outcome(outcome: HookOutcome, host: HostId) -> tuple[int, str, str]:
         }
         return 0, json.dumps(body, ensure_ascii=False), ""
     if host == HostId.ANTIGRAVITY:
-        body = {"decision": decision.value, "reason": message}
+        # ADR-0003 で確認済みの値は deny のみ。未確認の ask は出さない
+        body = {"decision": HookDecision.DENY.value, "reason": message}
         return 0, json.dumps(body, ensure_ascii=False), ""
     if host == HostId.CODEX and decision == HookDecision.ASK:
         return 2, "", f"承認が必要: {message}"
@@ -354,6 +388,7 @@ def run_hook(
     *,
     policy: Policy,
     trace: TraceWriter | None,
+    unattended: bool,
 ) -> tuple[int, str, str]:
     if event not in KNOWN_EVENTS:
         return _fail_closed(host, "UNKNOWN_EVENT", f"未知の Hook イベント: {event}")
@@ -364,6 +399,10 @@ def run_hook(
             outputs = [out for h in SESSION_START_HANDLERS if (out := h(inp))]
             return 0, "\n".join(outputs), ""
         outcome = evaluate(inp, policy=policy)
+        if unattended and outcome.decision == HookDecision.ASK:
+            outcome = HookOutcome(
+                HookDecision.DENY, outcome.reason_code, f"{_UNATTENDED_NOTE}: {outcome.message}"
+            )
         _emit_trace(trace, inp, outcome)
         return render_outcome(outcome, host)
     except MalformedHookInput as e:

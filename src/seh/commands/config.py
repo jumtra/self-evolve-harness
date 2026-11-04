@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import stat
 import sys
 import tempfile
 from pathlib import Path
@@ -55,10 +56,15 @@ def _show(args: argparse.Namespace) -> int:
 
 def _atomic_write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    # mkstemp は 0600 で作るため、既存ファイルのモードを引き継ぐ
+    mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".config-", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp, mode)
         os.replace(tmp, path)
     except BaseException:
         Path(tmp).unlink(missing_ok=True)

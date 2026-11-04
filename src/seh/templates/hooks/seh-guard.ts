@@ -7,13 +7,15 @@ export const SehGuard = async ({ directory }: { directory: string }) => ({
     const result = spawnSync("seh", ["hook", "PreToolUse", "--host", "opencode"], {
       input: payload,
       encoding: "utf-8",
+      timeout: 10000,
     })
     const error = result.error as NodeJS.ErrnoException | undefined
     if (error?.code === "ENOENT") {
       console.warn("警告: seh が未導入のため Hook を通過させます")
       return
     }
-    if (error || result.status !== 0) {
+    // タイムアウト(error.code === ETIMEDOUT)・シグナル終了・非0 はすべてブロック
+    if (error || result.signal || result.status !== 0) {
       throw new Error(result.stderr || "seh hook によりブロックされました")
     }
   },

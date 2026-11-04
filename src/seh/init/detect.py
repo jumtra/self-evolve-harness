@@ -17,6 +17,8 @@ from typing import Any
 
 import yaml
 
+from seh.policy import TOOL_CONFIG_GLOBS
+
 IGNORED_DIRS = frozenset({".git", "node_modules", ".venv", "target", "dist", "build", "vendor"})
 _HARNESS_ENTRIES = (
     ".claude",
@@ -37,33 +39,7 @@ _CI_FILES = (
     "bitbucket-pipelines.yml",
 )
 _CONVENTIONAL_DIRS = ("apps", "packages", "services")
-_PROTECTED_PATTERNS = (
-    ".eslintrc*",
-    "eslint.config.*",
-    ".prettierrc*",
-    "prettier.config.*",
-    "biome.json",
-    "biome.jsonc",
-    ".stylelintrc*",
-    "stylelint.config.*",
-    "ruff.toml",
-    ".ruff.toml",
-    "pyrightconfig.json",
-    "mypy.ini",
-    ".mypy.ini",
-    ".flake8",
-    "tsconfig*.json",
-    ".golangci.*",
-    "rustfmt.toml",
-    ".rustfmt.toml",
-    "clippy.toml",
-    ".clippy.toml",
-    ".editorconfig",
-    "Directory.Build.props",
-    ".clang-format",
-    ".clang-tidy",
-    ".tflint.hcl",
-)
+_NO_TEST = "no test specified"
 _MAKEFILES = ("Makefile", "makefile", "GNUmakefile")
 _JUSTFILES = ("justfile", ".justfile", "Justfile")
 
@@ -414,7 +390,9 @@ def _runner_commands(
                 return "make", cmds
             break
     if "package.json" in names:
-        scripts = set(_as_dict(scan.json(d / "package.json").get("scripts")))
+        raw_scripts = _as_dict(scan.json(d / "package.json").get("scripts"))
+        # npm init の既定プレースホルダは常に失敗するため実在コマンドとして扱わない
+        scripts = {k for k, v in raw_scripts.items() if not (isinstance(v, str) and _NO_TEST in v)}
         cmds = _from_targets(scripts, _node_render(pm or "npm"))
         if not _is_empty(cmds):
             return "npm-scripts", cmds
@@ -552,9 +530,7 @@ def _package_manager(scan: _Scan, d: Path, names: set[str], langs: tuple[str, ..
 
 
 def _protected(names: set[str], prefix: str) -> set[str]:
-    return {
-        f"{prefix}{n}" for n in names if any(fnmatch.fnmatch(n, p) for p in _PROTECTED_PATTERNS)
-    }
+    return {f"{prefix}{n}" for n in names if any(fnmatch.fnmatch(n, p) for p in TOOL_CONFIG_GLOBS)}
 
 
 def _detect_app(scan: _Scan, d: Path, is_root: bool, root_names: set[str]) -> AppDetection | None:
