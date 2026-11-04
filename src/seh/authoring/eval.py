@@ -16,12 +16,17 @@ from typing import cast
 from seh.artifacts import ArtifactStore
 from seh.contracts import (
     CliAgentRunner,
+    HostId,
+    PlannedChange,
+    RenderContext,
     RunContext,
     RunResult,
     RuntimeCapabilityReport,
     TerminalState,
 )
 from seh.runtime.process import DEFAULT_ENV_ALLOWLIST
+from seh.spec_loader import load_spec
+from seh.sync import default_adapters
 
 TRIGGER_CATEGORIES = {"TRIGGER_POS": True, "TRIGGER_NEG": False}
 _SKILL_NAME_KEYS = ("skill", "command", "name")
@@ -49,9 +54,24 @@ def trigger_run_to_json(run: TriggerRun) -> str:
     return json.dumps({"kind": "trigger", **asdict(run)}, ensure_ascii=False, indent=2)
 
 
+def _trigger_result_from_json(raw: object) -> TriggerResult:
+    if not isinstance(raw, dict):
+        raise ValueError("trigger results の要素がオブジェクトではありません")
+    item = cast("dict[str, object]", raw)
+    case_id, category = item.get("case_id"), item.get("category")
+    expected, observed = item.get("expected_trigger"), item.get("observed")
+    if not isinstance(case_id, str) or not isinstance(category, str):
+        raise ValueError("trigger results: case_id / category は文字列である必要があります")
+    if not isinstance(expected, bool) or not (observed is None or isinstance(observed, bool)):
+        raise ValueError(
+            "trigger results: expected_trigger / observed は真偽値である必要があります"
+        )
+    return TriggerResult(case_id, category, expected, observed)
+
+
 def trigger_run_from_json(text: str) -> TriggerRun:
     data = cast("dict[str, object]", json.loads(text))
-    results = tuple(TriggerResult(**r) for r in cast("list[dict[str, object]]", data["results"]))  # pyright: ignore[reportArgumentType]
+    results = tuple(_trigger_result_from_json(r) for r in cast("list[object]", data["results"]))
     return TriggerRun(
         run_id=cast("str", data["run_id"]),
         host=cast("str", data["host"]),
@@ -144,6 +164,19 @@ async def run_trigger_eval(
     )
 
 
+def render_changes(spec_dir: Path, root: Path, host: HostId) -> list[PlannedChange]:
+    """正本から host の生成物を HostAdapter で描画する（再実装しない）。content を持つものだけ。"""
+    spec = load_spec(spec_dir)
+    ctx = RenderContext(root=root, enabled_hosts=(host,), project_name=root.resolve().name)
+    plan = default_adapters()[host].render(spec, ctx)
+    return [c for c in plan.changes if c.content is not None]
+
+
+def render_generated_files(spec_dir: Path, root: Path, host: HostId) -> dict[str, bytes]:
+    """OverlayRunner に渡す {相対パス: 内容}。managed-block は新規作成扱い（ブロックのみ）。"""
+    return {c.path: cast("bytes", c.content) for c in render_changes(spec_dir, root, host)}
+
+
 def _exclude_from_git(workdir: Path, patterns: Sequence[str]) -> None:
     """重ねたファイルを eval の「範囲外変更」判定に混ぜない（git 管理外の作業 repo 前提）。"""
     exclude = workdir / ".git" / "info" / "exclude"
@@ -154,6 +187,11 @@ def _exclude_from_git(workdir: Path, patterns: Sequence[str]) -> None:
     if missing:
         with exclude.open("a", encoding="utf-8") as f:
             f.write("\n".join(missing) + "\n")
+
+
+def _exclude_pattern(rel: str) -> str:
+    top, sep, _ = rel.partition("/")
+    return top + sep
 
 
 class OverlayRunner:
@@ -172,7 +210,7 @@ class OverlayRunner:
             target = context.cwd / rel
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
-        _exclude_from_git(context.cwd, sorted({rel.split("/")[0] + "/" for rel in self._files}))
+        _exclude_from_git(context.cwd, sorted({_exclude_pattern(rel) for rel in self._files}))
         return await self._inner.run_once(prompt, context)
 
     async def cancel(self, run_id: str) -> None:

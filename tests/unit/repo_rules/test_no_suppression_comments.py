@@ -22,12 +22,6 @@ PATTERNS = (
     _SLASH + "eslint-" + "disable",
 )
 
-# 別ワーカー（F8 / T54）が修正中のため一時除外。F8/T54 修正後に削除する
-PENDING_FIX = (
-    "src/seh/authoring/eval.py",
-    "src/seh/commands/author.py",
-)
-
 
 def _scan() -> list[str]:
     found: list[str] = []
@@ -36,7 +30,7 @@ def _scan() -> list[str]:
             if path.suffix not in SUFFIXES or not path.is_file():
                 continue
             rel = path.relative_to(ROOT).as_posix()
-            if rel.startswith(EXCLUDED_PREFIXES) or rel.startswith(PENDING_FIX):
+            if rel.startswith(EXCLUDED_PREFIXES):
                 continue
             for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
                 if any(p in line for p in PATTERNS):

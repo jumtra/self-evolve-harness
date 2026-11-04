@@ -1,7 +1,6 @@
 # ハンドラ契約: handler(args: argparse.Namespace) -> int（戻り値が終了コード）。
 import argparse
 import asyncio
-import copy
 import json
 import os
 import posixpath
@@ -24,11 +23,14 @@ from seh.authoring.eval import (
     OverlayRunner,
     TriggerResult,
     TriggerRun,
+    render_changes,
+    render_generated_files,
     run_trigger_eval,
     trigger_run_from_json,
     trigger_run_to_json,
 )
 from seh.authoring.gate import (
+    SPEC_PREFIX,
     GateDecision,
     GateStatus,
     evaluate_gate,
@@ -64,6 +66,7 @@ from seh.evals.fixtures import DEFAULT_SUITE_ROOT, FixtureError, load_suite
 from seh.evals.report import compare, from_json, render_markdown, to_json
 from seh.evals.runner import EvalRun, run_eval
 from seh.evals.variants import VARIANTS
+from seh.providers.hosts.common import MANAGED_BEGIN, MANAGED_BLOCK_REASON, MANAGED_END
 from seh.runtime.runners.base import BaseCliRunner
 from seh.spec_loader import SpecError, load_spec
 from seh.sync import default_adapters
@@ -158,20 +161,21 @@ def _candidate_dir(root: Path, record: AuthoringRecord) -> Path:
     return root / CANDIDATES_DIR / record.id
 
 
+def _merge_spec(spec_dir: Path, candidate: Path, merged: Path) -> None:
+    shutil.copytree(spec_dir, merged)
+    if candidate.is_dir():
+        shutil.copytree(candidate, merged, dirs_exist_ok=True)
+
+
 def _overlay_lint(root: Path, candidate: Path) -> list[Diagnostic]:
-    """現正本に候補を重ねた状態の正本を lint する。正本が無ければ検査対象なし。"""
+    """現正本に候補を重ねた正本と、そこから描画した生成物を lint する。正本が無ければ対象なし。"""
     spec_dir = root / SPEC_DIR
     if not spec_dir.is_dir():
         return []
     with tempfile.TemporaryDirectory(prefix="seh-author-") as tmp:
         merged = Path(tmp) / "spec"
-        shutil.copytree(spec_dir, merged)
-        if candidate.is_dir():
-            shutil.copytree(candidate, merged, dirs_exist_ok=True)
-        try:
-            return lint_spec(load_spec(merged))
-        except SpecError as e:
-            return [Diagnostic(DiagnosticLevel.ERROR, "SPEC_INVALID", str(e))]
+        _merge_spec(spec_dir, candidate, merged)
+        return _generated_lint(root, merged)
 
 
 def _candidate_digests(candidate: EvalRun | None, current: Mapping[str, str]) -> dict[str, str]:
@@ -349,6 +353,44 @@ def _reviewed_paths(root: Path, cfg: Config, diags: list[Diagnostic]) -> set[str
     return reviewed
 
 
+def _expected_generated(root: Path) -> dict[str, tuple[bytes, bool]]:
+    """現行正本から全ホスト分を描画した {パス: (内容, managed-block か)}。正本が読めなければ空。"""
+    spec_dir = root / SPEC_DIR
+    if not spec_dir.is_dir():
+        return {}
+    expected: dict[str, tuple[bytes, bool]] = {}
+    try:
+        for host in HostId:
+            for change in render_changes(spec_dir, root, host):
+                expected[change.path] = (
+                    cast("bytes", change.content),
+                    change.reason == MANAGED_BLOCK_REASON,
+                )
+    except (SpecError, OSError):
+        return {}
+    return expected
+
+
+def _managed_block(text: str) -> str | None:
+    begin = text.find(MANAGED_BEGIN)
+    end = text.find(MANAGED_END, begin) if begin >= 0 else -1
+    return text[begin : end + len(MANAGED_END)] if end >= 0 else None
+
+
+def _matches_generated(root: Path, path: str, content: bytes, is_block: bool) -> bool | None:
+    """生成物が正本の描画と一致するか。None は比較対象外（管理ブロックの無い利用者ファイル）。"""
+    target = root / path
+    if not target.is_file():
+        return False
+    actual = target.read_bytes()
+    if not is_block:
+        return actual == content
+    block = _managed_block(actual.decode("utf-8", errors="replace"))
+    if block is None:
+        return None
+    return block.rstrip("\n") == content.decode("utf-8").rstrip("\n")
+
+
 def _changed_findings(root: Path, cfg: Config, base: str) -> list[Diagnostic]:
     diags: list[Diagnostic] = []
     try:
@@ -356,11 +398,25 @@ def _changed_findings(root: Path, cfg: Config, base: str) -> list[Diagnostic]:
     except (ValueError, subprocess.CalledProcessError) as e:
         return [Diagnostic(DiagnosticLevel.ERROR, "BASE_REF_UNRESOLVED", str(e))]
     reviewed = _reviewed_paths(root, cfg, diags)
+    expected = _expected_generated(root)
     level = DiagnosticLevel.WARN if cfg.authoring.policy == "advisory" else DiagnosticLevel.ERROR
     for item in classify_changes(changes):
+        path = posixpath.normpath(item.path)
+        if not path.startswith(SPEC_PREFIX) and path in expected:
+            content, is_block = expected[path]
+            if _matches_generated(root, path, content, is_block) is False:
+                diags.append(
+                    Diagnostic(
+                        DiagnosticLevel.ERROR,
+                        f"GENERATED_FILE_DRIFT:{item.path}",
+                        "生成物を直接編集しています。"
+                        ".harness/spec を変更して seh sync してください",
+                        item.path,
+                    )
+                )
+            continue
         if item.risk is AuthoringRisk.TEXT_ONLY:
             continue
-        path = posixpath.normpath(item.path)
         if path in reviewed or is_initial_generation(root, path):
             continue
         diags.append(
@@ -421,10 +477,11 @@ def _usable_runner(host: str, store: ArtifactStore) -> tuple[CliAgentRunner | No
     except KeyError:
         return None, f"RUNNER_NOT_REGISTERED: {host}"
     if isinstance(runner, BaseCliRunner):
-        # events.jsonl を読めるよう、保存先をこのコマンドの ArtifactStore に揃えた複製で実行する
-        clone = copy.copy(runner)
-        clone._artifacts = store  # pyright: ignore[reportPrivateUsage]
-        return clone, None
+        # events.jsonl を読めるよう、保存先をこのコマンドの ArtifactStore にした Runner を作り直す
+        try:
+            return type(runner)(artifacts=store), None
+        except TypeError:
+            return None, f"RUNNER_NOT_REBUILDABLE: {host}"
     return runner, None
 
 
@@ -470,16 +527,6 @@ def _blocked_trigger(record: AuthoringRecord, host: str, reason: str) -> Trigger
     return TriggerRun(run_id, host, _skill_id(record), (placeholder,), _now())
 
 
-def _overlay_files(spec_dir: Path) -> dict[str, bytes]:
-    if not spec_dir.is_dir():
-        return {}
-    return {
-        f".harness/spec/{p.relative_to(spec_dir).as_posix()}": p.read_bytes()
-        for p in sorted(spec_dir.rglob("*"))
-        if p.is_file()
-    }
-
-
 async def _outcome(
     root: Path, cfg: Config, record: AuthoringRecord, runner: CliAgentRunner
 ) -> tuple[EvalRun, EvalRun]:
@@ -489,7 +536,18 @@ async def _outcome(
     candidate_dir = _candidate_dir(root, record)
     runs: list[EvalRun] = []
     with tempfile.TemporaryDirectory(prefix="seh-author-eval-") as workroot:
-        for files in (_overlay_files(root / SPEC_DIR), _overlay_files(candidate_dir)):
+        # 実 CLI は生成物を読むため、baseline / candidate とも同条件で描画した生成物を重ねる
+        merged = Path(workroot) / "candidate-spec"
+        try:
+            host = HostId(runner.host)
+            _merge_spec(root / SPEC_DIR, candidate_dir, merged)
+            variants = (
+                render_generated_files(root / SPEC_DIR, root, host),
+                render_generated_files(merged, root, host),
+            )
+        except (ValueError, OSError, SpecError) as e:
+            raise FixtureError(f"生成物を描画できません: {e}") from e
+        for files in variants:
             overlaid = OverlayRunner(runner, files)
             runs.append(
                 await run_eval(

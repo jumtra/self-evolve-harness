@@ -15,6 +15,8 @@ from seh.evals.report import compare
 from seh.evals.runner import EvalRun
 from seh.ownership import OwnershipManifest
 
+SPEC_PREFIX = ".harness/spec/"
+
 
 class GateStatus(StrEnum):
     PASS = "PASS"
@@ -62,6 +64,8 @@ def file_digests(directory: Path) -> dict[str, str]:
 
 def is_initial_generation(root: Path, path: str) -> bool:
     """D13: `seh init --apply` 生成後に未変更のファイルは Authoring Gate の対象外。"""
+    if not path.startswith(SPEC_PREFIX):
+        return False
     entry = OwnershipManifest.load(root).get(path)
     target = root / path
     if entry is None or entry.generator != "init" or not target.is_file():

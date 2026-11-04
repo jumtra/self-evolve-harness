@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,7 +14,13 @@ from seh.init.planner import CONFIG_PATH, InitPlan, load_spec_files
 from seh.init.templating import InitError
 from seh.migration.apply import apply_migration
 from seh.migration.planner import MigrationAction
-from seh.ownership import MANIFEST_PATH, Transaction, atomic_write, recover_incomplete
+from seh.ownership import (
+    MANIFEST_PATH,
+    OwnershipManifest,
+    Transaction,
+    atomic_write,
+    recover_incomplete,
+)
 from seh.sync import LOCK_PATH, SyncPlan, apply_sync, plan_sync
 
 __all__ = ["InitResult", "apply_init", "merge_gitignore"]
@@ -110,6 +117,13 @@ def apply_init(
             if merged != current:
                 tx.write(".gitignore", merged.encode("utf-8"))
                 written.append(".gitignore")
+
+        # 正本の初回導入を D13（Authoring Gate 対象外）の判定材料にする。
+        # apply_sync は manifest を読み直して更新するため、この記録は消えない
+        manifest = OwnershipManifest.load(root)
+        for rel, data in plan.spec_files.items():
+            manifest.record(rel, hashlib.sha256(data).hexdigest(), "init", seh_version)
+        manifest.save(root)
 
         if plan.migration is not None:
             migration_conflicts = {
