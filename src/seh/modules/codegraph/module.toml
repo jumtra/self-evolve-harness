@@ -1,0 +1,11 @@
+id = "code-intelligence.codegraph"
+api_version = "1"
+version = "1.0.0"
+provides = ["code.index", "code.search", "code.dependencies", "code.impact", "code.affected_tests"]
+requires = ["exec.local", "git.read"]
+conflicts = ["code-intelligence.graphify", "code-intelligence.none"]
+permissions = ["read:repository", "write:local_index"]
+default_enabled = false
+opt_in = true
+network_access = false
+health_command = ["codegraph", "--version"]

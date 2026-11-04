@@ -1,0 +1,11 @@
+id = "memory.file"
+api_version = "1"
+version = "1.0.0"
+provides = ["memory.store"]
+requires = ["fs.read", "fs.write"]
+conflicts = ["memory.engram"]
+permissions = ["read:memory", "write:memory"]
+default_enabled = true
+opt_in = false
+network_access = false
+health_command = []

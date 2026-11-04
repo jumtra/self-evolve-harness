@@ -34,11 +34,12 @@ def test_no_subcommand_returns_2(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 @pytest.mark.parametrize("group", GROUPS)
-def test_stub_returns_2_with_message(group: str, capsys: pytest.CaptureFixture[str]) -> None:
-    code = main([group])
+def test_every_group_accepts_help(group: str, capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as exited:
+        main([group, "--help"])
 
-    assert code == 2
-    assert f"未実装: seh {group}" in capsys.readouterr().err
+    assert exited.value.code == 0
+    assert group in capsys.readouterr().out
 
 
 def test_module_entrypoint_runs_as_script() -> None:

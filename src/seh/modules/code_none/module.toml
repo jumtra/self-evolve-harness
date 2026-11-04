@@ -1,0 +1,11 @@
+id = "code-intelligence.none"
+api_version = "1"
+version = "1.0.0"
+provides = ["code.search", "code.dependencies"]
+requires = ["fs.read"]
+conflicts = ["code-intelligence.codegraph", "code-intelligence.graphify"]
+permissions = ["read:repository"]
+default_enabled = false
+opt_in = false
+network_access = false
+health_command = []

@@ -1,0 +1,11 @@
+id = "memory.engram"
+api_version = "1"
+version = "1.0.0"
+provides = ["memory.store"]
+requires = ["exec.local"]
+conflicts = ["memory.file"]
+permissions = ["read:memory", "write:memory"]
+default_enabled = false
+opt_in = true
+network_access = false
+health_command = ["engram", "--version"]
