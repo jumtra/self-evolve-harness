@@ -11,12 +11,12 @@ from seh.evals.fixtures import DEFAULT_SUITE_ROOT, FixtureError, load_suite
 from seh.evals.report import compare, from_json, render_markdown, summarize, to_json
 from seh.evals.runner import run_eval
 from seh.evals.variants import VARIANTS
-from seh.runtime.agent_runner import RunnerRegistry
+from seh.runtime.runners.defaults import default_registry
 
 HOSTS = ("claude", "codex", "opencode", "antigravity")
 SPLITS = frozenset({"training", "regression", "holdout"})
 # 実 Runner は後続タスクがここへ登録する。CI テストは差し替えた Fake を注入する
-REGISTRY = RunnerRegistry()
+REGISTRY = default_registry()
 
 
 def _run(args: argparse.Namespace) -> int:
