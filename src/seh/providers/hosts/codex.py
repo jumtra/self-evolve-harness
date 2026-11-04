@@ -23,6 +23,8 @@ from seh.contracts import (
     RuntimeCapabilityReport,
 )
 from seh.providers.hosts.common import SHARED_SKILLS_DIR, agents_md_change, shared_skill_changes
+from seh.providers.hosts.hooks_map import render_hooks
+from seh.providers.hosts.permissions_map import map_permissions
 from seh.runtime.cli_capability import ProbeSpec, probe_cli
 
 OWNER = "host:codex"
@@ -168,10 +170,12 @@ class CodexHostAdapter:
             changes += shared_skill_changes(skill, owner=OWNER)
         changes += [_agent_change(agent) for agent in spec.agents]
         size_error = _agents_md_size_error(agents_md)
+        permission_mapping = map_permissions(self.id, spec.permissions)
+        changes.extend(render_hooks(self.id, permission_mapping.permissions))
         return GeneratedPlan(
             host=self.id,
             changes=tuple(changes),
-            diagnostics=(size_error,) if size_error else (),
+            diagnostics=((size_error,) if size_error else ()) + permission_mapping.diagnostics,
             capabilities=_CAPABILITIES,
         )
 

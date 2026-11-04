@@ -1,0 +1,45 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if ! command -v seh >/dev/null 2>&1; then echo 'seh not installed; hook bypassed' >&2; exit 0; fi; exec seh hook PreToolUse --host claude",
+            "onFailure": "block"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if ! command -v seh >/dev/null 2>&1; then echo 'seh not installed; hook bypassed' >&2; exit 0; fi; exec seh hook PostToolUse --host claude"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if ! command -v seh >/dev/null 2>&1; then echo 'seh not installed; hook bypassed' >&2; exit 0; fi; exec seh hook SessionStart --host claude"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if ! command -v seh >/dev/null 2>&1; then echo 'seh not installed; hook bypassed' >&2; exit 0; fi; exec seh hook Stop --host claude"
+          }
+        ]
+      }
+    ]
+  }
+}

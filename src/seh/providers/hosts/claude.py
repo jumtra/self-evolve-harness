@@ -28,6 +28,8 @@ from seh.providers.hosts.common import (
     managed_block,
     skill_changes,
 )
+from seh.providers.hosts.hooks_map import render_hooks
+from seh.providers.hosts.permissions_map import map_permissions
 from seh.runtime.cli_capability import ProbeSpec, probe_cli
 
 OWNER = "host:claude"
@@ -229,10 +231,12 @@ class ClaudeHostAdapter:
             changes += skill_changes(skill, base_dir=SKILLS_DIR, meta=meta, owner=OWNER)
         changes += [_agent_change(agent) for agent in spec.agents]
         changes += [_rule_change(rule) for rule in spec.rules]
+        permission_mapping = map_permissions(self.id, spec.permissions)
+        changes.extend(render_hooks(self.id, permission_mapping.permissions))
         return GeneratedPlan(
             host=HostId.CLAUDE,
             changes=tuple(changes),
-            diagnostics=tuple(_rule_diagnostics(spec.rules)),
+            diagnostics=tuple(_rule_diagnostics(spec.rules)) + permission_mapping.diagnostics,
             capabilities=_CAPABILITIES,
         )
 

@@ -28,6 +28,8 @@ from seh.providers.hosts.common import (
     frontmatter_document,
     shared_skill_changes,
 )
+from seh.providers.hosts.hooks_map import render_hooks
+from seh.providers.hosts.permissions_map import map_permissions
 from seh.runtime.cli_capability import ProbeSpec, probe_cli
 
 _OWNER = "host:opencode"
@@ -216,10 +218,12 @@ class OpenCodeHostAdapter:
             if with_claude
             else ()
         )
+        permission_mapping = map_permissions(self.id, spec.permissions)
+        changes.extend(render_hooks(self.id, permission_mapping.permissions))
         return GeneratedPlan(
             host=self.id,
             changes=tuple(changes),
-            diagnostics=diagnostics,
+            diagnostics=diagnostics + permission_mapping.diagnostics,
             capabilities=_capabilities(with_claude),
         )
 

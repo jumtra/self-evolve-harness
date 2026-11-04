@@ -1,0 +1,36 @@
+{
+  "seh": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if ! command -v seh >/dev/null 2>&1; then echo 'seh not installed; hook bypassed' >&2; exit 0; fi; result=$(seh hook PreToolUse --host antigravity); status=$?; if [ \"$status\" -ne 0 ]; then printf '%s\\n' '{\"decision\":\"deny\",\"reason\":\"seh hook failed\"}'; exit 0; fi; printf '%s' \"$result\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if ! command -v seh >/dev/null 2>&1; then echo 'seh not installed; hook bypassed' >&2; exit 0; fi; exec seh hook PostToolUse --host antigravity"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "if ! command -v seh >/dev/null 2>&1; then echo 'seh not installed; hook bypassed' >&2; exit 0; fi; exec seh hook SessionStart --host antigravity"
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "if ! command -v seh >/dev/null 2>&1; then echo 'seh not installed; hook bypassed' >&2; exit 0; fi; exec seh hook Stop --host antigravity"
+      }
+    ]
+  }
+}

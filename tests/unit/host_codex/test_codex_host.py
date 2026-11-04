@@ -174,6 +174,7 @@ def test_render_does_not_generate_rule_files(tmp_path: Path) -> None:
     assert sorted(c.path for c in plan.changes) == [
         ".agents/skills/work/SKILL.md",
         ".codex/agents/reviewer.toml",
+        ".codex/hooks.json",
         "AGENTS.md",
     ]
 

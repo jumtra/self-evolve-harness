@@ -1,0 +1,14 @@
+export const SehGuard = async ({ directory }: { directory: string }) => ({
+  "tool.execute.before": async (input: { tool: string }, output: { args: unknown }) => {
+    const cmd = "if ! command -v seh >/dev/null 2>&1; then " +
+      "echo 'seh not installed' >&2; exit 0; fi; " +
+      "exec seh hook PreToolUse --host opencode";
+    const proc = Bun.spawnSync(["sh", "-c", cmd], {
+      stdin: new TextEncoder().encode(JSON.stringify({
+        tool: input.tool, args: output.args, cwd: directory
+      })), cwd: directory, stdout: "pipe", stderr: "pipe"
+    });
+    if (proc.exitCode !== 0) throw new Error(new TextDecoder().decode(proc.stderr));
+    if (proc.stderr.length) console.warn(new TextDecoder().decode(proc.stderr));
+  },
+});

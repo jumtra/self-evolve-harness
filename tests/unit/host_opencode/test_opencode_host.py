@@ -129,7 +129,7 @@ def test_render_does_not_generate_rules(tmp_path: Path) -> None:
 
     plan = _plan(tmp_path, _spec(rules=(rule,)))
 
-    assert [c.path for c in plan.changes] == ["AGENTS.md"]
+    assert [c.path for c in plan.changes] == ["AGENTS.md", ".opencode/plugins/seh-guard.ts"]
     assert _capability(plan, "rules.path_scoped") is CapabilityLevel.UNSUPPORTED
 
 

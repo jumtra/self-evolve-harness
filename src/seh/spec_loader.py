@@ -157,7 +157,16 @@ def load_spec(spec_dir: Path) -> CanonicalSpec:
     )
     agent_files = sorted((spec_dir / "agents").glob("*.yaml"))
     rule_files = sorted((spec_dir / "rules").glob("*.md"))
+    permissions_file = spec_dir / "permissions.yaml"
+    permissions = (
+        _yaml_mapping(permissions_file, _read(permissions_file))
+        if permissions_file.is_file()
+        else {}
+    )
+    if any(not isinstance(k, str) or not isinstance(v, str) for k, v in permissions.items()):
+        raise SpecError(f"{permissions_file}: permissions must map strings to strings")
     return CanonicalSpec(
+        permissions={k: v for k, v in permissions.items() if isinstance(v, str)},
         instructions=_read(core),
         skills=tuple(_load_skill(d, f"skills/{d.name}/SKILL.md") for d in skill_dirs),
         agents=tuple(_load_agent(p) for p in agent_files),

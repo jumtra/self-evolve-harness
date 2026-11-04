@@ -85,6 +85,7 @@ class CanonicalSpec:
     skills: tuple[SkillSpec, ...]
     agents: tuple[AgentSpec, ...]
     rules: tuple[RuleSpec, ...]
+    permissions: Mapping[str, str] = field(default_factory=dict)
 
 
 class ChangeAction(StrEnum):
