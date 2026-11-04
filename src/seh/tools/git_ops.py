@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
-from fnmatch import fnmatchcase
 
+from seh.globs import outside_allowlist
 from seh.runtime.process import DEFAULT_ENV_ALLOWLIST, build_env, run_process
 from seh.tools.registry import ToolContext, ToolError, ToolSpec
 
@@ -38,7 +38,7 @@ async def _scope_check(args: Mapping[str, object], ctx: ToolContext) -> Mapping[
     names = await _diff_names(args, ctx)
     allowlist = [str(g) for g in args["allowlist"]]  # type: ignore[attr-defined]
     touched = [*names["changed"], *names["untracked"]]  # type: ignore[misc]
-    outside = sorted({p for p in touched if not any(fnmatchcase(p, g) for g in allowlist)})
+    outside = list(outside_allowlist(touched, allowlist))
     return {"ok": not outside, "outside": outside}
 
 

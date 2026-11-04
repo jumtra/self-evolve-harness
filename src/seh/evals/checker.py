@@ -15,6 +15,7 @@ import jsonschema
 from seh.artifacts import ArtifactStore
 from seh.contracts import Evidence, Verdict, VerdictStatus
 from seh.evals.fixtures import BASELINE_TAG, CheckSpec, EvalCase, git_env
+from seh.globs import match_path, outside_allowlist
 from seh.redaction import mask_text
 from seh.runtime.process import DEFAULT_ENV_ALLOWLIST, build_env, run_process
 
@@ -49,32 +50,6 @@ def _fail(
     check_id: str, reason: str, detail: str = "", evidence: tuple[Evidence, ...] = ()
 ) -> CheckResult:
     return CheckResult(check_id, False, reason, evidence, detail)
-
-
-def _glob_regex(pattern: str) -> re.Pattern[str]:
-    out: list[str] = []
-    i = 0
-    while i < len(pattern):
-        if pattern.startswith("**/", i):
-            out.append("(?:.*/)?")
-            i += 3
-        elif pattern.startswith("**", i):
-            out.append(".*")
-            i += 2
-        elif pattern[i] == "*":
-            out.append("[^/]*")
-            i += 1
-        elif pattern[i] == "?":
-            out.append("[^/]")
-            i += 1
-        else:
-            out.append(re.escape(pattern[i]))
-            i += 1
-    return re.compile("".join(out))
-
-
-def _matches(path: str, patterns: list[str] | tuple[str, ...]) -> bool:
-    return any(_glob_regex(p).fullmatch(path) for p in patterns)
 
 
 def _str_list(value: Any, label: str) -> list[str]:
@@ -153,7 +128,7 @@ async def _check_diff_scope(spec: CheckSpec, ctx: _Ctx) -> CheckResult:
 
 
 async def _scope(check_id: str, allow: list[str], workdir: Path) -> CheckResult:
-    outside = [f for f in await _changed_files(workdir) if not _matches(f, allow)]
+    outside = outside_allowlist(await _changed_files(workdir), allow)
     if outside:
         return _fail(check_id, "OUT_OF_SCOPE_CHANGE", "outside allowlist: " + ", ".join(outside))
     return _ok(check_id)
@@ -161,7 +136,7 @@ async def _scope(check_id: str, allow: list[str], workdir: Path) -> CheckResult:
 
 async def _check_forbidden_change(spec: CheckSpec, ctx: _Ctx) -> CheckResult:
     paths = _str_list(spec.params.get("paths"), "paths")
-    hit = [f for f in await _changed_files(ctx.workdir) if _matches(f, paths)]
+    hit = [f for f in await _changed_files(ctx.workdir) if any(match_path(f, p) for p in paths)]
     if hit:
         return _fail(spec.id, "FORBIDDEN_CHANGE", "forbidden paths changed: " + ", ".join(hit))
     return _ok(spec.id)

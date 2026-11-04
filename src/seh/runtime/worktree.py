@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from seh.globs import outside_allowlist
 from seh.redaction import mask_text
 from seh.runtime.process import DEFAULT_ENV_ALLOWLIST, build_env, run_process
 
@@ -50,33 +51,6 @@ def _check_id(value: str, label: str) -> str:
     if not _SAFE_ID.fullmatch(value) or value.startswith(("-", ".")):
         raise ValueError(f"unsafe {label}: {value!r}")
     return value
-
-
-def _glob_to_regex(glob: str) -> re.Pattern[str]:
-    out: list[str] = []
-    i = 0
-    while i < len(glob):
-        if glob.startswith("**/", i):
-            out.append("(?:.*/)?")
-            i += 3
-        elif glob.startswith("**", i):
-            out.append(".*")
-            i += 2
-        elif glob[i] == "*":
-            out.append("[^/]*")
-            i += 1
-        elif glob[i] == "?":
-            out.append("[^/]")
-            i += 1
-        else:
-            out.append(re.escape(glob[i]))
-            i += 1
-    return re.compile("".join(out))
-
-
-def _always_violation(path: str) -> bool:
-    parts = path.split("/")
-    return path.startswith("/") or ".." in parts or ".git" in parts
 
 
 class WorktreeManager:
@@ -151,16 +125,7 @@ class WorktreeManager:
         return tuple(sorted(names))
 
     def scope_violations(self, changed: Sequence[str], allowlist: Sequence[str]) -> tuple[str, ...]:
-        patterns = [_glob_to_regex(g) for g in allowlist]
-        return tuple(
-            sorted(
-                {
-                    p
-                    for p in changed
-                    if _always_violation(p) or not any(r.fullmatch(p) for r in patterns)
-                }
-            )
-        )
+        return outside_allowlist(changed, allowlist)
 
     async def commit_unit(self, ws: UnitWorkspace, message: str) -> str:
         await self._git(["add", "-A"], ws.path)
