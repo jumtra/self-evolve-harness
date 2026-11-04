@@ -158,6 +158,13 @@ async def _run_trial(
                 break
         verdict, _ = await run_checks(case, work, artifacts=artifacts)
         evidence.extend(e.uri for e in verdict.evidence)
+        if artifacts is not None and not verdict.evidence:
+            ev = artifacts.put(
+                case.id,
+                f"verdict-t{trial}-a{attempts}.json",
+                json.dumps(verdict.as_repair_input(), ensure_ascii=False),
+            )
+            evidence.append(ev.uri)
         status = verdict.status.value
         if verdict.passed:
             break
@@ -203,6 +210,7 @@ async def run_eval(
     artifacts: ArtifactStore | None = None,
     splits: Collection[str] | None = None,
     deadline_seconds: int = 600,
+    overlay: Mapping[str, bytes | None] | None = None,
 ) -> EvalRun:
     if trials < 1:
         raise ValueError("trials must be >= 1")
@@ -213,7 +221,7 @@ async def run_eval(
         if splits is not None and case.split not in splits:
             continue
         for trial in range(trials):
-            work = materialize(case, workroot / run_id / f"{case.id}-t{trial}")
+            work = materialize(case, workroot / run_id / f"{case.id}-t{trial}", overlay=overlay)
             results.append(
                 await _run_trial(case, variant, runner, trial, work, artifacts, deadline_seconds)
             )

@@ -221,13 +221,31 @@ def _rewrite_files(work: Path, case: EvalCase) -> None:
             path.rename(path.with_name(path.name.removesuffix(FIXTURE_SUFFIX)))
 
 
-def materialize(case: EvalCase, dest: Path) -> Path:
+def materialize(
+    case: EvalCase, dest: Path, *, overlay: Mapping[str, bytes | None] | None = None
+) -> Path:
     if not case.repo_dir.is_dir():
         raise FixtureError(f"repo dir not found: {case.repo_dir}")
     if dest.exists() and (not dest.is_dir() or any(dest.iterdir())):
         raise FixtureError(f"destination must be empty: {dest}")
     shutil.copytree(case.repo_dir, dest, symlinks=True, dirs_exist_ok=True)
     _rewrite_files(dest, case)
+    for name, content in (overlay or {}).items():
+        relative = Path(name)
+        if not name or relative.is_absolute() or any(p in ("..", ".git") for p in relative.parts):
+            raise FixtureError(f"unsafe overlay path: {name}")
+        target = dest / relative
+        current = dest
+        for part in relative.parts:
+            current = current / part
+            if current.is_symlink():
+                raise FixtureError(f"symlink in overlay path: {name}")
+        if content is None:
+            if target.exists():
+                target.unlink()
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(content)
     _git(["init", "-q"], dest)
     with (dest / ".git" / "info" / "exclude").open("a", encoding="utf-8") as f:
         f.write("\n".join(_EXCLUDES) + "\n")
