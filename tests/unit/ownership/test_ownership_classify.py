@@ -1,6 +1,8 @@
 import hashlib
 from pathlib import Path
 
+import pytest
+
 from seh.contracts import ChangeAction, PlannedChange
 from seh.ownership import FileStatus, OwnershipManifest, classify_change
 
@@ -115,3 +117,24 @@ def test_managed_symlink_with_matching_target_is_clean_update(tmp_path: Path) ->
     status = classify_change(tmp_path, manifest, change)
 
     assert status == FileStatus.CLEAN_UPDATE
+
+
+def test_directory_target_raises_value_error(tmp_path: Path) -> None:
+    (tmp_path / "d").mkdir()
+    change = PlannedChange("d", ChangeAction.UPDATE, b"x", "r", "seh")
+
+    with pytest.raises(ValueError, match="path is a directory"):
+        classify_change(tmp_path, OwnershipManifest.load(tmp_path), change)
+
+
+def test_managed_symlink_with_changed_target_but_matching_proposal_is_unchanged(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "link").symlink_to("new-target")
+    manifest = OwnershipManifest.load(tmp_path)
+    manifest.record("link", "", "host:claude", "2.0.0", kind="symlink", link_target="old-target")
+    change = PlannedChange("link", ChangeAction.LINK, b"new-target", "r", "seh")
+
+    status = classify_change(tmp_path, manifest, change)
+
+    assert status == FileStatus.UNCHANGED

@@ -1,7 +1,6 @@
 import asyncio
 import json
 import sys
-from pathlib import Path
 
 import pytest
 
@@ -9,21 +8,16 @@ from seh.artifacts import ArtifactStore
 from seh.contracts import RunContext, TerminalState
 from seh.runtime.runners.fake import ScriptedVendorRunner
 
-_OK_SCRIPT = (
-    "import json;"
-    "print(json.dumps({'type':'result','ok':True,'text':'done',"
-    "'usage':{'input_tokens':3,'output_tokens':4,'cost_usd':0.5}}))"
-)
-
-
-def _context(tmp_path: Path, deadline: int = 20) -> RunContext:
-    return RunContext(tmp_path, tmp_path, deadline, ("PATH",))
-
 
 async def test_success_result_carries_response_usage_and_digest(tmp_path):
-    runner = ScriptedVendorRunner(_OK_SCRIPT)
+    script = (
+        "import json;"
+        "print(json.dumps({'type':'result','ok':True,'text':'done',"
+        "'usage':{'input_tokens':3,'output_tokens':4,'cost_usd':0.5}}))"
+    )
+    runner = ScriptedVendorRunner(script)
 
-    result = await runner.run_once("hi", _context(tmp_path))
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
 
     assert result.terminal_state is TerminalState.SUCCESS
     assert result.final_response == "done"
@@ -41,7 +35,7 @@ async def test_success_result_carries_response_usage_and_digest(tmp_path):
 async def test_exit_zero_without_terminal_event_is_invalid_output(tmp_path):
     runner = ScriptedVendorRunner('print(\'{"type":"progress"}\')')
 
-    result = await runner.run_once("hi", _context(tmp_path))
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
 
     assert result.exit_code == 0
     assert result.terminal_state is TerminalState.INVALID_OUTPUT
@@ -50,7 +44,7 @@ async def test_exit_zero_without_terminal_event_is_invalid_output(tmp_path):
 async def test_malformed_json_line_is_invalid_output(tmp_path):
     runner = ScriptedVendorRunner("print('not json')")
 
-    result = await runner.run_once("hi", _context(tmp_path))
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
 
     assert result.terminal_state is TerminalState.INVALID_OUTPUT
 
@@ -63,7 +57,7 @@ async def test_permission_denials_downgrade_success_to_failed(tmp_path):
     )
     runner = ScriptedVendorRunner(script)
 
-    result = await runner.run_once("hi", _context(tmp_path))
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
 
     assert result.exit_code == 0
     assert result.terminal_state is TerminalState.FAILED
@@ -74,15 +68,15 @@ async def test_permission_denials_downgrade_success_to_failed(tmp_path):
 async def test_timeout_maps_to_timed_out(tmp_path):
     runner = ScriptedVendorRunner("import time; time.sleep(30)")
 
-    result = await runner.run_once("hi", _context(tmp_path, deadline=1))
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 1, ("PATH",)))
 
     assert result.terminal_state is TerminalState.TIMED_OUT
 
 
 async def test_missing_command_maps_to_unsupported(tmp_path):
-    runner = ScriptedVendorRunner(_OK_SCRIPT, command="seh-no-such-command-xyz")
+    runner = ScriptedVendorRunner("print(1)", command="seh-no-such-command-xyz")
 
-    result = await runner.run_once("hi", _context(tmp_path))
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
 
     assert result.terminal_state is TerminalState.UNSUPPORTED
     assert result.error_code == "CLI_NOT_FOUND"
@@ -90,7 +84,7 @@ async def test_missing_command_maps_to_unsupported(tmp_path):
 
 async def test_cancel_by_run_id_maps_to_cancelled(tmp_path):
     runner = ScriptedVendorRunner("import time; time.sleep(30)")
-    task = asyncio.create_task(runner.run_once("hi", _context(tmp_path)))
+    task = asyncio.create_task(runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",))))
     for _ in range(200):
         if runner.active_run_ids():
             break
@@ -105,14 +99,16 @@ async def test_cancel_by_run_id_maps_to_cancelled(tmp_path):
 
 
 async def test_cancel_unknown_run_id_does_nothing(tmp_path):
-    runner = ScriptedVendorRunner(_OK_SCRIPT)
+    runner = ScriptedVendorRunner(
+        "import json; print(json.dumps({'type':'result','ok':True,'text':'done'}))"
+    )
 
     await runner.cancel("unknown")
 
 
 async def test_task_cancellation_propagates_cancelled_error(tmp_path):
     runner = ScriptedVendorRunner("import time; time.sleep(30)")
-    task = asyncio.create_task(runner.run_once("hi", _context(tmp_path)))
+    task = asyncio.create_task(runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",))))
     for _ in range(200):
         if runner.active_run_ids():
             break
@@ -129,7 +125,7 @@ async def test_missing_usage_is_none_not_zero(tmp_path):
     script = "import json; print(json.dumps({'type':'result','ok':True,'text':'x'}))"
     runner = ScriptedVendorRunner(script)
 
-    result = await runner.run_once("hi", _context(tmp_path))
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
 
     assert result.terminal_state is TerminalState.SUCCESS
     assert result.usage is None
@@ -159,7 +155,7 @@ async def test_prompt_is_delivered_via_stdin(tmp_path):
     )
     runner = ScriptedVendorRunner(script)
 
-    result = await runner.run_once("hello prompt", _context(tmp_path))
+    result = await runner.run_once("hello prompt", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
 
     assert result.final_response == "hello prompt"
 
@@ -174,28 +170,128 @@ async def test_artifacts_are_saved_with_secrets_masked(tmp_path):
     store = ArtifactStore(tmp_path / "artifacts")
     runner = ScriptedVendorRunner(script, artifacts=store)
 
-    result = await runner.run_once("hi", _context(tmp_path))
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
 
     assert len(result.evidence_refs) == 2
-    saved = [store.resolve(uri).read_text() for uri in result.evidence_refs]
-    assert any("type" in text for text in saved)
-    assert all(secret not in text for text in saved)
-    names = sorted(store.resolve(uri).name for uri in result.evidence_refs)
-    assert names == ["events.jsonl", "stderr.txt"]
+    events_ref, stderr_ref = result.evidence_refs
+    events_text = store.resolve(events_ref).read_text()
+    stderr_text = store.resolve(stderr_ref).read_text()
+    assert store.resolve(events_ref).name == "events.jsonl"
+    assert store.resolve(stderr_ref).name == "stderr.txt"
+    assert '"type"' in events_text
+    assert secret not in events_text
+    assert secret not in stderr_text
 
 
 async def test_no_evidence_refs_without_artifact_store(tmp_path):
-    runner = ScriptedVendorRunner(_OK_SCRIPT)
+    runner = ScriptedVendorRunner(
+        "import json; print(json.dumps({'type':'result','ok':True,'text':'done'}))"
+    )
 
-    result = await runner.run_once("hi", _context(tmp_path))
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
 
     assert result.evidence_refs == ()
 
 
 def test_probe_uses_probe_spec_of_subclass():
-    runner = ScriptedVendorRunner(_OK_SCRIPT, command=sys.executable)
+    runner = ScriptedVendorRunner(
+        "import json; print(json.dumps({'type':'result','ok':True}))", command=sys.executable
+    )
 
     report = runner.probe()
 
     assert report.host == runner.host
     assert report.installed is True
+
+
+async def test_vendor_reports_not_ok_with_nonzero_exit_is_failed_vendor_error(tmp_path):
+    script = (
+        "import json, sys;print(json.dumps({'type':'result','ok':False,'text':'boom'}));sys.exit(2)"
+    )
+    runner = ScriptedVendorRunner(script)
+
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
+
+    assert result.exit_code == 2
+    assert result.terminal_state is TerminalState.FAILED
+    assert result.error_code == "VENDOR_ERROR"
+
+
+async def test_ok_true_with_exit_one_is_failed_nonzero_exit(tmp_path):
+    script = (
+        "import json, sys;print(json.dumps({'type':'result','ok':True,'text':'done'}));sys.exit(1)"
+    )
+    runner = ScriptedVendorRunner(script)
+
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
+
+    assert result.exit_code == 1
+    assert result.terminal_state is TerminalState.FAILED
+    assert result.error_code == "NONZERO_EXIT"
+
+
+async def test_truncated_stdout_is_invalid_output(tmp_path):
+    runner = ScriptedVendorRunner("print('x' * 11_000_000)")
+
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 60, ("PATH",)))
+
+    assert result.terminal_state is TerminalState.INVALID_OUTPUT
+    assert result.error_code == "OUTPUT_TRUNCATED"
+
+
+async def test_missing_cwd_is_invalid_context(tmp_path):
+    runner = ScriptedVendorRunner("print(1)")
+    missing = tmp_path / "does-not-exist"
+
+    result = await runner.run_once("hi", RunContext(tmp_path, missing, 20, ("PATH",)))
+
+    assert result.terminal_state is TerminalState.FAILED
+    assert result.error_code == "INVALID_CONTEXT"
+    assert result.exit_code is None
+
+
+async def test_non_positive_deadline_is_invalid_context(tmp_path):
+    runner = ScriptedVendorRunner("print(1)")
+
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 0, ("PATH",)))
+
+    assert result.terminal_state is TerminalState.FAILED
+    assert result.error_code == "INVALID_CONTEXT"
+
+
+async def test_non_executable_command_is_unsupported_cli_not_executable(tmp_path):
+    script_file = tmp_path / "not-executable"
+    script_file.write_text("#!/bin/sh\n")
+    script_file.chmod(0o644)
+    runner = ScriptedVendorRunner("print(1)", command=str(script_file))
+
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
+
+    assert result.terminal_state is TerminalState.UNSUPPORTED
+    assert result.error_code == "CLI_NOT_EXECUTABLE"
+
+
+async def test_final_response_and_structured_output_are_masked(tmp_path):
+    secret = "sk-ant-" + "a" * 40
+    script = f"import json;print(json.dumps({{'type':'result','ok':True,'text':'key {secret}'}}))"
+    runner = ScriptedVendorRunner(script)
+
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
+
+    assert result.final_response is not None
+    assert secret not in result.final_response
+    assert "[REDACTED]" in result.final_response
+
+
+async def test_permission_denials_are_masked(tmp_path):
+    secret = "sk-ant-" + "b" * 40
+    script = (
+        "import json;"
+        "print(json.dumps({'type':'result','ok':True,'text':'x',"
+        f"'permission_denials':[{{'tool':'Bash','cmd':'run {secret}'}}]}}))"
+    )
+    runner = ScriptedVendorRunner(script)
+
+    result = await runner.run_once("hi", RunContext(tmp_path, tmp_path, 20, ("PATH",)))
+
+    assert result.permission_denials == ({"tool": "Bash", "cmd": "run [REDACTED]"},)

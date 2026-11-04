@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 
 
@@ -44,25 +44,26 @@ AUTHORING_TRANSITIONS: Mapping[AuthoringState, frozenset[AuthoringState]] = {
     _A.AWAITING_APPROVAL: frozenset({_A.APPROVED, _A.REJECTED, _A.NEEDS_HUMAN}),
     _A.APPROVED: frozenset({_A.BASELINED}),
     _A.BASELINED: frozenset({_A.WRITTEN, _A.BLOCKED_NO_EVAL}),
-    _A.WRITTEN: frozenset({_A.VERIFYING}),
+    _A.WRITTEN: frozenset({_A.VERIFYING, _A.ROLLED_BACK, _A.NEEDS_HUMAN}),
     _A.VERIFYING: frozenset(
-        {_A.REPAIRING, _A.AWAITING_EVAL, _A.COMPARED, _A.BLOCKED_NO_EVAL, _A.NEEDS_HUMAN}
+        {
+            _A.REPAIRING,
+            _A.AWAITING_EVAL,
+            _A.COMPARED,
+            _A.BLOCKED_NO_EVAL,
+            _A.NEEDS_HUMAN,
+            _A.ROLLED_BACK,
+        }
     ),
-    _A.REPAIRING: frozenset({_A.VERIFYING, _A.NEEDS_HUMAN}),
+    _A.REPAIRING: frozenset({_A.VERIFYING, _A.NEEDS_HUMAN, _A.ROLLED_BACK}),
     _A.AWAITING_EVAL: frozenset({_A.COMPARED, _A.BLOCKED_NO_EVAL, _A.NEEDS_HUMAN}),
-    _A.COMPARED: frozenset({_A.PROMOTED, _A.REJECTED, _A.NEEDS_HUMAN}),
+    _A.COMPARED: frozenset({_A.PROMOTED, _A.REJECTED, _A.NEEDS_HUMAN, _A.ROLLED_BACK}),
     _A.PROMOTED: frozenset({_A.ROLLED_BACK}),
     _A.REJECTED: frozenset(),
     _A.BLOCKED_NO_EVAL: frozenset(),
     _A.NEEDS_HUMAN: frozenset({_A.PLANNED}),
     _A.ROLLED_BACK: frozenset(),
 }
-
-
-def transition_authoring(current: AuthoringState, nxt: AuthoringState) -> AuthoringState:
-    if nxt not in AUTHORING_TRANSITIONS[current]:
-        raise InvalidAuthoringTransition(f"{current.value} -> {nxt.value} is not allowed")
-    return nxt
 
 
 @dataclass(frozen=True)
@@ -85,8 +86,15 @@ class AuthoringRecord:
             return False
         if self.risk is not AuthoringRisk.HIGH_RISK:
             return True
+        # high_risk は APPROVED を経由しないと BASELINED に入れない（PLANNED 直行禁止）。
         if self.state is AuthoringState.PLANNED and nxt is AuthoringState.BASELINED:
             return False
         if nxt in (AuthoringState.WRITTEN, AuthoringState.PROMOTED):
-            return self.approval_ref is not None
+            return bool(self.approval_ref)
         return True
+
+
+def transition_authoring(record: AuthoringRecord, nxt: AuthoringState) -> AuthoringRecord:
+    if not record.can_transition(nxt):
+        raise InvalidAuthoringTransition(f"{record.state.value} -> {nxt.value} is not allowed")
+    return replace(record, state=nxt)

@@ -84,7 +84,7 @@ class ScriptedVendorRunner(BaseCliRunner):
             return TerminalDecision(TerminalState.INVALID_OUTPUT, "NO_TERMINAL_EVENT", None)
         text = result.get("text")
         denials = result.get("permission_denials")
-        succeeded = result.get("ok") is True and exit_code == 0
+        succeeded = result.get("ok") is True
         return TerminalDecision(
             TerminalState.SUCCESS if succeeded else TerminalState.FAILED,
             None if succeeded else "VENDOR_ERROR",

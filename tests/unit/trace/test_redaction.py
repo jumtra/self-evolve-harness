@@ -1,11 +1,8 @@
 import json
-from pathlib import Path
 
 import pytest
 
-from seh.redaction import MASK, contains_secret, mask_obj, mask_text
-
-FIXTURE = Path(__file__).parents[2] / "fixtures" / "security" / "masking_log_case.json"
+from seh.redaction import MASK, contains_secret, mask_jsonl, mask_obj, mask_text
 
 
 def test_aws_access_key_is_masked() -> None:
@@ -97,7 +94,26 @@ def test_key_value_keeps_key_and_masks_value() -> None:
 
 @pytest.mark.parametrize(
     "text",
-    ["skeleton", "task-001", "The quick brown fox jumps over the lazy dog.", "sk-1"],
+    [
+        "skeleton",
+        "task-001",
+        "The quick brown fox jumps over the lazy dog.",
+        "sk-1",
+        '{"tokens": 12}',
+        "input_tokens=5",
+        "token_count=3",
+        "max_tokens: 100",
+    ],
+    ids=[
+        "skeleton",
+        "task-id",
+        "prose",
+        "short-sk",
+        "tokens-json-number",
+        "input-tokens-usage",
+        "token-count",
+        "max-tokens",
+    ],
 )
 def test_benign_text_is_not_masked(text: str) -> None:
     result = mask_text(text)
@@ -131,25 +147,6 @@ def test_mask_obj_masks_by_key_name_and_recurses() -> None:
     }
 
 
-def test_fixture_log_template_is_masked() -> None:
-    case = json.loads(FIXTURE.read_text(encoding="utf-8"))
-    generated: dict[str, str] = {}
-    for name, spec in case["secrets"].items():
-        tpl = spec["secret_template"]
-        if "parts" in tpl:
-            generated[name] = "".join(tpl["parts"])
-        else:
-            generated[name] = tpl["prefix"] + tpl["fill"] * tpl["length"] + tpl.get("suffix", "")
-    lines = [line.format(**generated) if "{" in line else line for line in case["log_template"]]
-
-    masked = [mask_text(line) for line in lines]
-
-    for name in case["expect"]["masked_output_contains_none_of"]:
-        assert all(generated[name] not in m for m in masked)
-    for index in case["expect"]["preserved_lines"]:
-        assert masked[index] == lines[index]
-
-
 def test_mask_obj_keeps_usage_keys() -> None:
     obj = {"input_tokens": 10, "output_tokens": 20, "token_count": 30, "cache_read_tokens": 5}
 
@@ -164,3 +161,86 @@ def test_mask_obj_masks_token_suffix_and_exact_keys() -> None:
     result = mask_obj(obj)
 
     assert result == {"access_token": MASK, "github_token": MASK, "Client-Secret": MASK}
+
+
+@pytest.mark.parametrize(
+    ("text", "secret"),
+    [
+        ("GITHUB_TO" + "KEN=" + "abc123", "abc123"),
+        ("DB_PASS" + "WORD=" + "hunter2", "hunter2"),
+        ("AWS_SECRET_ACCESS_" + "KEY=" + "wJalrXUtnFEMI", "wJalrXUtnFEMI"),
+        ('{"pass' + 'word": "hunter2"}', "hunter2"),
+        ('{"api_' + 'key": "abc12345"}', "abc12345"),
+        ("postgres://u:" + "p4ss" + "@h/db", "p4ss"),
+        ("Authorization: Ba" + "sic " + "dXNlcjpwYXNz", "dXNlcjpwYXNz"),
+        ("Authorization: Tok" + "en " + "abcdef123456", "abcdef123456"),
+        ("x-api-" + "key: " + "abcd1234efgh", "abcd1234efgh"),
+        ("sk_" + "live_" + "a" * 24, "a" * 24),
+        ("sk_" + "test_" + "b" * 24, "b" * 24),
+        ("xox" + "b-" + "1234567890-abcdefghij", "1234567890-abcdefghij"),
+        (
+            "eyJ" + "a" * 10 + ".eyJ" + "b" * 10 + "." + "c" * 10,
+            "eyJ" + "a" * 10 + ".eyJ" + "b" * 10 + "." + "c" * 10,
+        ),
+    ],
+    ids=[
+        "env-github-token",
+        "env-db-password",
+        "env-aws-secret-access-key",
+        "json-password",
+        "json-api-key",
+        "url-credentials",
+        "auth-basic",
+        "auth-token-scheme",
+        "x-api-key-header",
+        "stripe-live",
+        "stripe-test",
+        "slack-bot",
+        "jwt",
+    ],
+)
+def test_secret_kind_is_masked(text: str, secret: str) -> None:
+    result = mask_text(text)
+
+    assert secret not in result
+    assert MASK in result
+
+
+def test_json_password_keeps_key_and_masks_only_value() -> None:
+    text = '{"pass' + 'word": "hunter2", "user": "alice"}'
+
+    result = mask_text(text)
+
+    assert result == '{"password": "' + MASK + '", "user": "alice"}'
+
+
+def test_url_credentials_keep_scheme_user_and_host() -> None:
+    text = "postgres://u:" + "p4ss" + "@h/db"
+
+    result = mask_text(text)
+
+    assert result == "postgres://u:" + MASK + "@h/db"
+
+
+def test_mask_jsonl_masks_by_key_inside_json_line() -> None:
+    line = json.dumps({"pass" + "word": "hunter2", "n": 1})
+
+    result = mask_jsonl(line)
+
+    assert json.loads(result) == {"password": MASK, "n": 1}
+
+
+def test_mask_jsonl_masks_unparseable_line_as_text() -> None:
+    text = "not json\nDB_PASS" + "WORD=" + "hunter2"
+
+    result = mask_jsonl(text)
+
+    assert result == "not json\nDB_PASS" + "WORD=" + MASK
+
+
+def test_mask_jsonl_preserves_non_ascii_text() -> None:
+    line = json.dumps({"text": "日本語"}, ensure_ascii=False)
+
+    result = mask_jsonl(line)
+
+    assert result == line

@@ -7,10 +7,10 @@ from seh.runtime.agent_runner import RunnerRegistry
 from seh.runtime.runners.fake import FakeCliRunner
 
 
-def _result(host: str) -> RunResult:
-    return RunResult(
+async def test_fake_runner_returns_results_in_order_and_records_calls():
+    first = RunResult(
         run_id="r",
-        host=host,
+        host="fake",
         terminal_state=TerminalState.SUCCESS,
         exit_code=0,
         final_response="ok",
@@ -19,10 +19,17 @@ def _result(host: str) -> RunResult:
         usage=None,
         error_code=None,
     )
-
-
-async def test_fake_runner_returns_results_in_order_and_records_calls():
-    first, second = _result("fake"), _result("fake")
+    second = RunResult(
+        run_id="r",
+        host="fake",
+        terminal_state=TerminalState.SUCCESS,
+        exit_code=0,
+        final_response="ok",
+        event_log_digest=None,
+        evidence_refs=(),
+        usage=None,
+        error_code=None,
+    )
     runner = FakeCliRunner("fake", [first, second])
     context = RunContext(Path("/w"), Path("/w"), 5, ("PATH",))
 
@@ -42,7 +49,20 @@ async def test_fake_runner_asserts_when_results_exhausted():
 
 
 async def test_fake_runner_accepts_callable_results():
-    runner = FakeCliRunner("fake", lambda prompt, _ctx: _result(prompt))
+    runner = FakeCliRunner(
+        "fake",
+        lambda prompt, _ctx: RunResult(
+            run_id="r",
+            host=prompt,
+            terminal_state=TerminalState.SUCCESS,
+            exit_code=0,
+            final_response="ok",
+            event_log_digest=None,
+            evidence_refs=(),
+            usage=None,
+            error_code=None,
+        ),
+    )
     context = RunContext(Path("/w"), Path("/w"), 5, ("PATH",))
 
     got = await runner.run_once("hostx", context)

@@ -134,6 +134,32 @@ def test_approval_token_scope_outside_is_invalid():
     assert valid is False
 
 
+def test_approval_token_naive_expires_at_raises_value_error():
+    naive = datetime(2026, 11, 4, 12, 0)
+
+    with pytest.raises(ValueError):
+        ApprovalToken(
+            id="tok-1",
+            scope=("src/**",),
+            target_digest="d1",
+            expires_at=naive,
+            issued_by="user",
+        )
+
+
+def test_approval_token_naive_now_raises_value_error():
+    token = ApprovalToken(
+        id="tok-1",
+        scope=("src/**",),
+        target_digest="d1",
+        expires_at=datetime(2026, 11, 4, 12, 5, tzinfo=UTC),
+        issued_by="user",
+    )
+
+    with pytest.raises(ValueError):
+        token.is_valid_for("src/a.py", "d1", datetime(2026, 11, 4, 12, 0))
+
+
 def test_module_manifest_from_mapping_design_example_parses_with_defaults():
     data = {
         "id": "code-intelligence.codegraph",

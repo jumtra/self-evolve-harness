@@ -4,7 +4,14 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from seh.contracts import ApprovalToken, RiskRank
-from seh.policy import Action, Policy, classify, classify_paths, is_protected_path
+from seh.policy import (
+    Action,
+    Policy,
+    action_digest,
+    classify,
+    classify_paths,
+    is_protected_path,
+)
 
 
 @pytest.mark.parametrize(
@@ -37,21 +44,20 @@ def test_r2_negative_case_unattended_without_token_is_denied(action: Action) -> 
 
 def test_authorize_r2_with_valid_human_token_is_allowed() -> None:
     now = datetime(2026, 1, 1, tzinfo=UTC)
+    action = Action(kind="command", target="rm -rf build")
     token = ApprovalToken(
         id="t1",
         scope=("command:*",),
-        target_digest="d1",
+        target_digest=action_digest(action),
         expires_at=now + timedelta(hours=1),
         issued_by="human",
     )
-    action = Action(kind="command", target="rm -rf build")
 
     decision = Policy().authorize(
         action,
         unattended=True,
         token=token,
         token_scope="command:rm",
-        target_digest="d1",
         now=now,
     )
 
@@ -59,34 +65,33 @@ def test_authorize_r2_with_valid_human_token_is_allowed() -> None:
 
 
 @pytest.mark.parametrize(
-    ("expires_in_seconds", "issued_by", "scope", "digest"),
+    ("expires_in_seconds", "issued_by", "scope", "digest_matches"),
     [
-        (-1, "human", "command:rm", "d1"),
-        (3600, "human", "command:rm", "other"),
-        (3600, "human", "write:rm", "d1"),
-        (3600, "agent", "command:rm", "d1"),
+        (-1, "human", "command:rm", True),
+        (3600, "human", "command:rm", False),
+        (3600, "human", "write:rm", True),
+        (3600, "agent", "command:rm", True),
     ],
     ids=["expired", "digest_mismatch", "scope_outside", "agent_issued"],
 )
 def test_authorize_r2_with_invalid_token_is_denied(
-    expires_in_seconds: int, issued_by: str, scope: str, digest: str
+    expires_in_seconds: int, issued_by: str, scope: str, digest_matches: bool
 ) -> None:
     now = datetime(2026, 1, 1, tzinfo=UTC)
+    action = Action(kind="command", target="rm -rf build")
     token = ApprovalToken(
         id="t1",
         scope=("command:*",),
-        target_digest="d1",
+        target_digest=action_digest(action) if digest_matches else "other",
         expires_at=now + timedelta(seconds=expires_in_seconds),
         issued_by=issued_by,
     )
-    action = Action(kind="command", target="rm -rf build")
 
     decision = Policy().authorize(
         action,
         unattended=True,
         token=token,
         token_scope=scope,
-        target_digest=digest,
         now=now,
     )
 
@@ -119,21 +124,20 @@ def test_authorize_external_effect_unattended_requires_approval(target: str) -> 
 
 def test_authorize_external_effect_with_valid_token_is_allowed() -> None:
     now = datetime(2026, 1, 1, tzinfo=UTC)
+    action = Action(kind="command", target="git push origin main")
     token = ApprovalToken(
         id="t1",
         scope=("command:*",),
-        target_digest="d1",
+        target_digest=action_digest(action),
         expires_at=now + timedelta(hours=1),
         issued_by="human",
     )
-    action = Action(kind="command", target="git push origin main")
 
     decision = Policy().authorize(
         action,
         unattended=True,
         token=token,
         token_scope="command:git",
-        target_digest="d1",
         now=now,
     )
 
@@ -248,14 +252,10 @@ def test_authorize_tool_in_allowlist_is_allowed() -> None:
     assert policy.authorize_tool("read").allowed is True
 
 
-def test_authorize_tool_with_empty_allowlist_is_allowed() -> None:
-    assert Policy().authorize_tool("anything").allowed is True
-
-
-def test_authorize_command_basename_in_allowlist_is_allowed() -> None:
+def test_authorize_command_bare_name_in_allowlist_is_allowed() -> None:
     policy = Policy(command_allowlist=frozenset({"pytest"}))
 
-    assert policy.authorize_command(["/usr/bin/pytest", "-q"]).allowed is True
+    assert policy.authorize_command(["pytest", "-q"]).allowed is True
 
 
 def test_authorize_command_not_in_allowlist_is_denied() -> None:

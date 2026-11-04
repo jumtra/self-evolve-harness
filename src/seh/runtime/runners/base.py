@@ -9,6 +9,7 @@ import os
 import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from typing import cast
 
 from seh.artifacts import ArtifactStore
 from seh.contracts import (
@@ -18,7 +19,7 @@ from seh.contracts import (
     TerminalState,
     Usage,
 )
-from seh.redaction import mask_text
+from seh.redaction import mask_jsonl, mask_obj, mask_text
 from seh.runtime.cli_capability import ProbeSpec, probe_cli
 from seh.runtime.process import ProcessResult, build_env, run_process
 
@@ -104,7 +105,7 @@ class BaseCliRunner(abc.ABC):
             return ()
         # 秘密が成果物へ残らないよう保存前に必ずマスクする
         events = self._artifacts.put(
-            run_id, "events.jsonl", mask_text(proc.stdout.decode(errors="replace"))
+            run_id, "events.jsonl", mask_jsonl(proc.stdout.decode(errors="replace"))
         )
         stderr = self._artifacts.put(
             run_id, "stderr.txt", mask_text(proc.stderr.decode(errors="replace"))
@@ -132,10 +133,14 @@ class BaseCliRunner(abc.ABC):
 
     async def run_once(self, prompt: str, context: RunContext) -> RunResult:
         run_id = uuid.uuid4().hex
+        if not context.cwd.is_dir() or context.deadline_seconds <= 0:
+            return self._result(run_id, TerminalState.FAILED, "INVALID_CONTEXT")
         try:
             proc = await self._execute(run_id, prompt, context)
         except FileNotFoundError:
             return self._result(run_id, TerminalState.UNSUPPORTED, "CLI_NOT_FOUND")
+        except PermissionError:
+            return self._result(run_id, TerminalState.UNSUPPORTED, "CLI_NOT_EXECUTABLE")
         except asyncio.CancelledError:
             current = asyncio.current_task()
             if current is not None and current.cancelling() > 0:
@@ -147,6 +152,10 @@ class BaseCliRunner(abc.ABC):
             return self._result(run_id, TerminalState.TIMED_OUT, "TIMED_OUT", proc, refs)
         if proc.cancelled:
             return self._result(run_id, TerminalState.CANCELLED, "CANCELLED", proc, refs)
+        if proc.stdout_truncated:
+            return self._result(
+                run_id, TerminalState.INVALID_OUTPUT, "OUTPUT_TRUNCATED", proc, refs
+            )
         try:
             events = self.parse_events(proc.stdout)
         except InvalidEventStream:
@@ -159,16 +168,23 @@ class BaseCliRunner(abc.ABC):
         # exit=0 かつ SUCCESS でも権限拒否が 1 件でもあれば成功扱いにしない（FR-091）
         if state is TerminalState.SUCCESS and decision.permission_denials:
             state, error_code = TerminalState.FAILED, "PERMISSION_DENIED"
+        # ベンダーが SUCCESS と言っても非 0 終了を成功にしない
+        if state is TerminalState.SUCCESS and proc.exit_code != 0:
+            state, error_code = TerminalState.FAILED, "NONZERO_EXIT"
         return RunResult(
             run_id=run_id,
             host=self.host,
             terminal_state=state,
             exit_code=proc.exit_code,
-            final_response=decision.final_response,
+            final_response=(
+                mask_text(decision.final_response) if decision.final_response is not None else None
+            ),
             event_log_digest=hashlib.sha256(proc.stdout).hexdigest(),
             evidence_refs=refs,
             usage=self.normalize_usage(events),
             error_code=error_code,
-            structured_output=decision.structured_output,
-            permission_denials=decision.permission_denials,
+            structured_output=mask_obj(decision.structured_output),
+            permission_denials=cast(
+                "tuple[Mapping[str, object], ...]", mask_obj(decision.permission_denials)
+            ),
         )

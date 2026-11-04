@@ -49,3 +49,28 @@ def test_forget_removes_entry(tmp_path: Path) -> None:
     manifest.forget("a.txt")
 
     assert manifest.get("a.txt") is None
+
+
+def test_load_ignores_unknown_keys_for_forward_compatibility(tmp_path: Path) -> None:
+    path = tmp_path / ".harness" / "ownership.json"
+    path.parent.mkdir()
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "files": {
+                    "a.txt": {
+                        "sha256": "aa",
+                        "owner": "seh",
+                        "generator": "g",
+                        "seh_version": "9",
+                        "future_field": 1,
+                    }
+                },
+            }
+        )
+    )
+
+    entry = OwnershipManifest.load(tmp_path).get("a.txt")
+
+    assert entry is not None and entry.sha256 == "aa"

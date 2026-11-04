@@ -13,7 +13,13 @@ class ApprovalToken:
     expires_at: datetime
     issued_by: str
 
+    def __post_init__(self) -> None:
+        if self.expires_at.tzinfo is None:
+            raise ValueError("expires_at must be timezone-aware")
+
     def is_valid_for(self, scope_item: str, digest: str, now: datetime) -> bool:
+        if now.tzinfo is None:
+            raise ValueError("now must be timezone-aware")
         if now >= self.expires_at or digest != self.target_digest:
             return False
         return any(fnmatchcase(scope_item, pattern) for pattern in self.scope)
