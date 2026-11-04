@@ -1,0 +1,18 @@
+# DESIGN EXAMPLE; not yet implemented
+[hosts]
+enabled = ["claude", "antigravity", "codex", "opencode"]
+
+[hosts.antigravity]
+surface = "auto"
+managed_cli = "disabled" # policy gate: external wrapping cannot be assumed permissible
+
+[runtime]
+mode = "native"
+provider = "auto"
+backend = "cli" # SDK packages not installed by default
+
+[authoring]
+policy = "required"
+required_hosts = "active" # 4-host FULL only with all evaluated + authorized
+require_eval_for_behavior_change = true
+require_ci_for_promote = true

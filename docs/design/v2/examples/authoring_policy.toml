@@ -1,0 +1,20 @@
+# Design example only. This is not installed into a harness automatically.
+[authoring]
+enabled = true
+mode = "required"
+max_repair_rounds = 3
+require_ci = true
+require_fresh_session_for_behavior_changes = true
+require_negative_trigger_tests = true
+no_eval_behavior = "block"
+
+[authoring.risk]
+text_only = ["spelling", "formatting"]
+behavioral = ["description", "trigger", "prompt_body", "output_contract"]
+high_risk = ["allowed_tools", "permissions", "hook", "shared_instruction", "secrets"]
+
+[authoring.evaluation]
+compare_with_disabled_skill = true
+compare_with_baseline = true
+must_regressions = "all_pass"
+metrics = ["trigger_precision", "trigger_recall", "outcome_pass_rate", "latency_ms", "tokens"]
