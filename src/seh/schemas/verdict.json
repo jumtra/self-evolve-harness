@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "seh://schemas/verdict.json",
+  "type": "object",
+  "properties": {
+    "node_id": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "BLOCKED"
+      ]
+    },
+    "check_id": {
+      "type": "string"
+    },
+    "reason_code": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "uri": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "uri",
+          "sha256"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "allowed_repair_scope": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "max_attempts": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "required": [
+    "node_id",
+    "status",
+    "check_id",
+    "reason_code",
+    "evidence",
+    "allowed_repair_scope",
+    "attempt",
+    "max_attempts"
+  ],
+  "additionalProperties": false
+}

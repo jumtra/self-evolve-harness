@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "seh://schemas/run_result.json",
+  "type": "object",
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "host": {
+      "type": "string"
+    },
+    "terminal_state": {
+      "enum": [
+        "SUCCESS",
+        "FAILED",
+        "BLOCKED_AUTH",
+        "POLICY_BLOCKED",
+        "UNSUPPORTED",
+        "INVALID_OUTPUT",
+        "TIMED_OUT",
+        "CANCELLED"
+      ]
+    },
+    "exit_code": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "final_response": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "event_log_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "usage": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "input_tokens": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "output_tokens": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "cost_usd": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "raw": {
+              "type": [
+                "object",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "input_tokens",
+            "output_tokens",
+            "cost_usd",
+            "raw"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "error_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "structured_output": {},
+    "permission_denials": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [
+    "run_id",
+    "host",
+    "terminal_state",
+    "exit_code",
+    "final_response",
+    "event_log_digest",
+    "evidence_refs",
+    "usage",
+    "error_code"
+  ],
+  "additionalProperties": false
+}

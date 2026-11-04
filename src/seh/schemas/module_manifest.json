@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "seh://schemas/module_manifest.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "api_version": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "provides": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requires": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "platforms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "default_enabled": {
+      "type": "boolean"
+    },
+    "opt_in": {
+      "type": "boolean"
+    },
+    "network_access": {
+      "type": "boolean"
+    },
+    "health_command": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "healthcheck": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "id",
+    "api_version",
+    "version",
+    "provides"
+  ],
+  "additionalProperties": false,
+  "anyOf": [
+    {
+      "required": [
+        "health_command"
+      ]
+    },
+    {
+      "required": [
+        "healthcheck"
+      ]
+    }
+  ]
+}

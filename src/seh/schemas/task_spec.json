@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "seh://schemas/task_spec.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "goal": {
+      "type": "string"
+    },
+    "acceptance": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk": {
+      "enum": [
+        "R0",
+        "R1",
+        "R2"
+      ]
+    },
+    "mode": {
+      "enum": [
+        "native",
+        "managed"
+      ]
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "max_parallel": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_attempts_per_unit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_wall_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_seconds_per_unit": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "required_capabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "id",
+    "goal",
+    "acceptance",
+    "risk",
+    "mode"
+  ],
+  "additionalProperties": false
+}

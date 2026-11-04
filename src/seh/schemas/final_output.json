@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "seh://schemas/final_output.json",
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "PASSED",
+        "FAILED",
+        "BLOCKED",
+        "CANCELLED",
+        "WAITING_APPROVAL"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "changed_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "remaining_risks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requires_human_approval": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "task_id",
+    "status",
+    "summary",
+    "changed_files",
+    "evidence_refs",
+    "remaining_risks",
+    "requires_human_approval"
+  ],
+  "additionalProperties": false
+}

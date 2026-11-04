@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "seh://schemas/work_unit.json",
+  "type": "object",
+  "properties": {
+    "node_id": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "splitter",
+        "worker",
+        "code",
+        "gate"
+      ]
+    },
+    "depends_on": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "outputs_schema": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "write_allowlist": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk": {
+      "enum": [
+        "R0",
+        "R1",
+        "R2"
+      ]
+    },
+    "prompt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "host": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "node_id",
+    "kind",
+    "depends_on",
+    "inputs",
+    "outputs_schema",
+    "write_allowlist",
+    "checks",
+    "risk"
+  ],
+  "additionalProperties": false
+}

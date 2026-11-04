@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "seh://schemas/edge.json",
+  "type": "object",
+  "properties": {
+    "from_node": {
+      "type": "string"
+    },
+    "from_output": {
+      "type": "string"
+    },
+    "to_node": {
+      "type": "string"
+    },
+    "to_input": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "from_node",
+    "from_output",
+    "to_node",
+    "to_input"
+  ],
+  "additionalProperties": false
+}
