@@ -7,6 +7,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from seh.config import ConfigError, defaults, load_config
 from seh.contracts import CanonicalSpec, DiagnosticLevel, HostAdapter, HostId, RenderContext
 from seh.providers.hosts.permissions_map import map_permissions
 from seh.spec_loader import SpecError, load_spec
@@ -30,11 +31,19 @@ def _skill(root: Path, path: str) -> dict[str, object]:
     return {"path": path, "sha256": digest, "effective_permissions": "UNVERIFIED"}
 
 
+def _runtime_mode(root: Path) -> str:
+    try:
+        return load_config(root / ".harness/config.toml").runtime.mode
+    except (FileNotFoundError, ConfigError):
+        return defaults().runtime.mode
+
+
 def build_report(
     root: Path, hosts: Sequence[HostId], *, adapters: Mapping[HostId, HostAdapter] | None = None
 ) -> dict[str, Any]:
     selected = default_adapters() if adapters is None else adapters
     reports: dict[str, object] = {}
+    runtime_mode = _runtime_mode(root)
     spec_dir = root / ".harness/spec"
     status = "MISSING" if not spec_dir.exists() else "LOADED"
     spec_error: str | None = None
@@ -67,16 +76,18 @@ def build_report(
             reasons.append(f"canonical spec {status.lower()}; permissions cannot be assessed")
         if any(d.level is DiagnosticLevel.ERROR for d in diagnostics):
             reasons.append("render diagnostics contain errors")
+        policy_blocked_in_mode = runtime.policy_blocked and runtime_mode == "managed"
         verdict = (
             "BLOCKED"
             if not runtime.installed
-            or runtime.policy_blocked
+            or policy_blocked_in_mode
             or status == "INVALID"
             or any(d.level is DiagnosticLevel.ERROR for d in diagnostics)
             else "PARTIAL"
         )
         report: dict[str, object] = {
             "verdict": verdict,
+            "managed_execution": "POLICY_BLOCKED" if runtime.policy_blocked else "AVAILABLE",
             "reasons": reasons,
             "canonical_spec": {
                 "status": status,

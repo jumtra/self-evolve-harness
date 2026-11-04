@@ -180,3 +180,25 @@ def test_gitignore_block_content(tmp_path: Path) -> None:
         "# seh:begin\n.harness/state/\n.harness/artifacts/\n.harness/backups/\n# seh:end\n"
     )
     assert plan.migration is None
+
+
+def test_all_hosts_excludes_antigravity_from_required_hosts(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    spec = tmp_path / "spec"
+    repo.mkdir()
+    (spec / "instructions").mkdir(parents=True)
+    (spec / "instructions" / "core.md").write_text("x\n", encoding="utf-8")
+
+    plan = plan_init(repo, InitOptions(hosts=tuple(HostId), spec_source=spec))
+
+    assert plan.config.hosts.enabled == (
+        HostId.CLAUDE,
+        HostId.ANTIGRAVITY,
+        HostId.CODEX,
+        HostId.OPENCODE,
+    )
+    assert plan.config.authoring.required_hosts == (
+        HostId.CLAUDE,
+        HostId.CODEX,
+        HostId.OPENCODE,
+    )

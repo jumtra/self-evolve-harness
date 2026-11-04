@@ -102,6 +102,10 @@ def _build_config(options: InitOptions) -> Config:
     cfg = defaults(options.profile)
     if options.hosts is not None:
         cfg = set_value(cfg, "hosts.enabled", ",".join(h.value for h in options.hosts))
+        if HostId.ANTIGRAVITY in options.hosts and cfg.hosts.antigravity_managed_cli == "disabled":
+            verified = [h.value for h in options.hosts if h is not HostId.ANTIGRAVITY]
+            if verified:
+                cfg = set_value(cfg, "authoring.required_hosts", ",".join(verified))
     if options.code_intelligence is not None:
         cfg = set_value(cfg, "code_intelligence.provider", options.code_intelligence)
     if options.memory is not None:

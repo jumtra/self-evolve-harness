@@ -15,9 +15,10 @@ from seh.contracts import (
 
 
 class FakeAdapter:
-    def __init__(self, host: HostId, installed: bool = True):
+    def __init__(self, host: HostId, installed: bool = True, policy_blocked: bool = False):
         self.id = host
         self.installed = installed
+        self.policy_blocked = policy_blocked
 
     def probe(self) -> RuntimeCapabilityReport:
         return RuntimeCapabilityReport(
@@ -26,7 +27,7 @@ class FakeAdapter:
             "1.0" if self.installed else None,
             None,
             {"json": CapabilityLevel.NATIVE},
-            False,
+            self.policy_blocked,
             (),
         )
 
@@ -138,3 +139,29 @@ def test_doctor_hosts_outputs_json_and_optional_file(tmp_path, monkeypatch, caps
     assert report["compatibility"]["hosts"]["codex"]["verdict"] == "BLOCKED"
     assert json.loads(output.read_text()) == report["compatibility"]
     assert code == 1
+
+
+def test_policy_blocked_host_is_partial_in_native_mode_and_blocked_in_managed_mode(
+    tmp_path: Path,
+) -> None:
+    spec = tmp_path / ".harness/spec"
+    (spec / "instructions").mkdir(parents=True)
+    (spec / "instructions/core.md").write_text("instructions")
+    adapter = FakeAdapter(HostId.ANTIGRAVITY, installed=True, policy_blocked=True)
+
+    native = build_report(tmp_path, [HostId.ANTIGRAVITY], adapters={HostId.ANTIGRAVITY: adapter})[
+        "hosts"
+    ]["antigravity"]
+    assert native["verdict"] == "PARTIAL"
+    assert native["managed_execution"] == "POLICY_BLOCKED"
+    assert "managed execution is policy blocked" in native["reasons"]
+
+    (tmp_path / ".harness/config.toml").write_text(
+        'profile = "full"\n[hosts]\nenabled = ["antigravity"]\n[runtime]\nmode = "managed"\n',
+        encoding="utf-8",
+    )
+    managed = build_report(tmp_path, [HostId.ANTIGRAVITY], adapters={HostId.ANTIGRAVITY: adapter})[
+        "hosts"
+    ]["antigravity"]
+    assert managed["verdict"] == "BLOCKED"
+    assert managed["managed_execution"] == "POLICY_BLOCKED"
